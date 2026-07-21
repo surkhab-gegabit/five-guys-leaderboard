@@ -1,9 +1,17 @@
-import NextAuth, { type DefaultSession } from 'next-auth';
+import NextAuth, { type DefaultSession, CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { sql } from './lib/db';
 import bcrypt from 'bcryptjs';
+import speakeasy from 'speakeasy';
 
-// Tell TypeScript about our custom User and Session properties, including the ID!
+// Custom error classes so our frontend knows exactly when to ask for the 6-digit code
+class TwoFactorRequiredError extends CredentialsSignin {
+  code = "2FA_REQUIRED";
+}
+class InvalidTwoFactorError extends CredentialsSignin {
+  code = "INVALID_2FA";
+}
+
 declare module 'next-auth' {
   interface Session {
     user: {
@@ -12,7 +20,6 @@ declare module 'next-auth' {
       store_id: number | null;
     } & DefaultSession['user'];
   }
-
   interface User {
     id: string;
     role: string;
@@ -34,16 +41,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       name: 'Credentials',
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        token: { label: "2FA Token", type: "text" } // We added the token to our expected inputs!
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // 1. Clean the incoming email (remove spaces and force lowercase)
         const cleanEmail = String(credentials.email).trim().toLowerCase();
-
-        // 2. Tell SQL to lowercase the database email before comparing
-        const users = await sql`SELECT * FROM users WHERE LOWER(email) = ${cleanEmail}`;
+        const users = await sql`SELECT *, two_factor_secret FROM users WHERE LOWER(email) = ${cleanEmail}`;
         const user = users[0];
 
         if (!user || !user.password_hash) return null;
@@ -51,6 +56,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await bcrypt.compare(String(credentials.password), user.password_hash);
         
         if (isValid) {
+          
+          // --- THE NEW 2FA CHECK ---
+          if (user.two_factor_secret) {
+            // If they didn't provide a token yet, stop and tell the frontend we need one
+            if (!credentials.token) {
+              throw new TwoFactorRequiredError();
+            }
+
+            // If they provided a token, verify it mathematically
+            const verified = speakeasy.totp.verify({
+              secret: user.two_factor_secret,
+              encoding: 'base32',
+              token: String(credentials.token)
+            });
+
+            if (!verified) {
+              throw new InvalidTwoFactorError();
+            }
+          }
+          // -------------------------
+
           return { 
             id: String(user.id), 
             email: user.email, 
