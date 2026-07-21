@@ -42,7 +42,6 @@ export default async function DashboardPage(props: DashboardProps) {
   const safeStoreId = activeStoreId || 1;
   const activeStoreName = allStores.find(s => s.id === activeStoreId)?.name || "Unknown Store";
 
-  // DATABASE ACTION: Add Employee
   async function addEmployee(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -60,7 +59,6 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard"); 
   }
 
-  // DATABASE ACTION: Update Points
   async function updatePoints(employeeId: string, pointsChange: number, reason: string) {
     "use server";
     const currentSession = await auth();
@@ -76,7 +74,6 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // DATABASE ACTION: Delete User
   async function deleteUser(targetId: string) {
     "use server";
     const currentSession = await auth();
@@ -88,7 +85,6 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // DATABASE ACTION: Reset Points
   async function resetPoints(targetStoreId: number) {
     "use server";
     const currentSession = await auth();
@@ -106,7 +102,6 @@ export default async function DashboardPage(props: DashboardProps) {
     ORDER BY total_points DESC
   `) as LeaderboardUser[];
 
-  // CALCULATE EMPLOYEE PERSONAL STATS
   const employeeRankIndex = leaderboard.findIndex(u => u.id === userId);
   const employeeData = employeeRankIndex !== -1 ? leaderboard[employeeRankIndex] : null;
   const employeeRank = employeeRankIndex !== -1 ? employeeRankIndex + 1 : null;
@@ -124,8 +119,11 @@ export default async function DashboardPage(props: DashboardProps) {
                   Activity Feed
                 </Link>
               )}
-              <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400">
-                {session.user?.name} ({userRole?.replace('_', ' ')})
+              {/* CLEANED UP ADMIN NAME DISPLAY HERE */}
+              <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
+                {session.user?.name === "Admin Manager" 
+                  ? "Admin Manager" 
+                  : `${session.user?.name} (${userRole?.replace('_', ' ')})`}
               </span>
               <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
                 <button type="submit" className="bg-white text-[#DA291C] px-4 py-2 rounded-md text-sm font-bold shadow-sm hover:bg-gray-100 transition-colors">
@@ -166,7 +164,6 @@ export default async function DashboardPage(props: DashboardProps) {
 
         <div className="space-y-8">
           
-          {/* NEW: PERSONALIZED EMPLOYEE BANNER */}
           {!isManager && employeeData && (
             <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl shadow-lg p-6 text-white flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900">
               <div className="mb-4 md:mb-0 text-center md:text-left">

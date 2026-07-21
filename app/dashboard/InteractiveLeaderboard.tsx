@@ -59,7 +59,6 @@ export default function InteractiveLeaderboard({
     }
   };
 
-  // HTML: TABLE AND MODAL STRUCTURE
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden border-t-8 border-[#DA291C] relative">
       <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -91,7 +90,10 @@ export default function InteractiveLeaderboard({
               <tr key={user.id} className="hover:bg-red-50 transition-colors group">
                 <td className="px-6 py-4 font-black text-gray-400">#{index + 1}</td>
                 <td className="px-6 py-4 font-bold text-gray-900">{user.name}</td>
-                <td className="px-6 py-4 text-sm font-semibold text-gray-500 capitalize">{user.role.replace('_', ' ')}</td>
+                {/* CLEANED UP ADMIN ROLE DISPLAY HERE */}
+                <td className="px-6 py-4 text-sm font-semibold text-gray-500 capitalize">
+                  {user.role === "area_manager" ? "Admin" : user.role.replace('_', ' ')}
+                </td>
                 <td className="px-6 py-4 font-black text-[#DA291C] text-right text-lg">{user.total_points}</td>
                 
                 {isManager && (
