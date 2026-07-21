@@ -4,6 +4,7 @@ import { sql } from "../../lib/db";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import InteractiveLeaderboard from "./InteractiveLeaderboard";
+import StoreManager from "./StoreManager";
 import Link from "next/link";
 
 type LeaderboardUser = { id: string; name: string; role: string; total_points: number };
@@ -42,6 +43,7 @@ export default async function DashboardPage(props: DashboardProps) {
   const safeStoreId = activeStoreId || 1;
   const activeStoreName = allStores.find(s => s.id === activeStoreId)?.name || "Unknown Store";
 
+  // --- EMPLOYEE MANAGEMENT ---
   async function addEmployee(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -95,6 +97,46 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
+  // --- STORE MANAGEMENT (NEW) ---
+  async function addStore(formData: FormData) {
+    "use server";
+    const currentSession = await auth();
+    if (currentSession?.user?.role !== "area_manager") return;
+    
+    const storeName = formData.get("storeName")?.toString();
+    if (!storeName) return;
+
+    await sql`INSERT INTO stores (name) VALUES (${storeName})`;
+    revalidatePath("/dashboard");
+  }
+
+  async function deleteStore(targetStoreId: number) {
+    "use server";
+    const currentSession = await auth();
+    if (currentSession?.user?.role !== "area_manager") return;
+
+    const allStoresResult = await sql`SELECT id FROM stores`;
+    if (allStoresResult.length <= 1) {
+      console.error("Cannot delete the last remaining store.");
+      return;
+    }
+
+    // 1. Admin Protection: Transfer any Area Managers out of the doomed store to a safe location
+    const safeStoreId = allStoresResult.find(s => s.id !== targetStoreId)?.id;
+    await sql`UPDATE users SET store_id = ${safeStoreId} WHERE store_id = ${targetStoreId} AND role = 'area_manager'`;
+
+    // 2. Cascade Delete: Wipe out standard employees and their points history in this store
+    await sql`DELETE FROM points_log WHERE employee_id IN (SELECT id FROM users WHERE store_id = ${targetStoreId})`;
+    await sql`DELETE FROM users WHERE store_id = ${targetStoreId}`;
+
+    // 3. Final Delete: Remove the store itself
+    await sql`DELETE FROM stores WHERE id = ${targetStoreId}`;
+
+    revalidatePath("/dashboard");
+    redirect("/dashboard"); 
+  }
+
+  // --- FETCH LEADERBOARD DATA ---
   const leaderboard = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
@@ -119,7 +161,6 @@ export default async function DashboardPage(props: DashboardProps) {
                   Activity Feed
                 </Link>
               )}
-              {/* CLEANED UP ADMIN NAME DISPLAY HERE */}
               <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" 
                   ? "Admin Manager" 
@@ -222,6 +263,17 @@ export default async function DashboardPage(props: DashboardProps) {
             resetPoints={resetPoints}
             storeId={safeStoreId}
           />
+
+          {/* NEW: ADMIN STORE MANAGEMENT PANEL */}
+          {isAreaManager && (
+            <StoreManager 
+              storeId={safeStoreId} 
+              storeName={activeStoreName} 
+              addStore={addStore} 
+              deleteStore={deleteStore} 
+            />
+          )}
+
         </div>
       </main>
     </div>
