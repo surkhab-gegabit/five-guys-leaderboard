@@ -55,6 +55,11 @@ export default async function DashboardPage(props: DashboardProps) {
     const role = formData.get("role")?.toString() || "employee";
     const targetStoreId = parseInt(formData.get("store_id")?.toString() || "1"); 
     
+    // Extra security check: Prevent store managers from hacking the form to create area_managers or store_managers
+    if (currentRole === "store_manager" && (role === "store_manager" || role === "area_manager")) {
+      throw new Error("Unauthorized role assignment");
+    }
+    
     const hash = await bcrypt.hash(password, 10);
     await sql`INSERT INTO users (name, email, password_hash, role, store_id) VALUES (${name}, ${email}, ${hash}, ${role}, ${targetStoreId})`;
     revalidatePath("/dashboard"); 
@@ -127,11 +132,11 @@ export default async function DashboardPage(props: DashboardProps) {
     redirect("/dashboard"); 
   }
 
-  // ONLY EMPLOYEES for the main leaderboard
+  // UPDATED QUERY: Get everyone who IS NOT a Store Manager or Area Manager
   const leaderboard = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
-    WHERE store_id = ${safeStoreId} AND role = 'employee'
+    WHERE store_id = ${safeStoreId} AND role NOT IN ('store_manager', 'area_manager')
     ORDER BY total_points DESC
   `) as LeaderboardUser[];
 
@@ -242,9 +247,12 @@ export default async function DashboardPage(props: DashboardProps) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1 text-gray-700 uppercase">Role</label>
-                  <select name="role" className="w-full px-3 py-2 border-2 border-gray-200 rounded-md bg-white text-gray-900">
+                  <select name="role" className="w-full px-3 py-2 border-2 border-gray-200 rounded-md bg-white text-gray-900 uppercase text-sm font-bold">
                     <option value="employee">Employee</option>
-                    <option value="store_manager">Store Manager</option>
+                    <option value="shift_leader">Shift Leader</option>
+                    <option value="agm">AGM</option>
+                    {/* ONLY SHOW STORE MANAGER OPTION TO THE ADMIN */}
+                    {isAreaManager && <option value="store_manager">Store Manager</option>}
                   </select>
                 </div>
                 <button type="submit" className="bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-md h-[42px] transition-colors shadow-md">
@@ -256,7 +264,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
           <InteractiveLeaderboard 
             leaderboard={leaderboard} 
-            managers={storeManagers} // Passed the managers in!
+            managers={storeManagers} 
             userRole={userRole} 
             updatePoints={updatePoints} 
             deleteUser={deleteUser}
