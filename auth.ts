@@ -39,7 +39,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const users = await sql`SELECT * FROM users WHERE email = ${credentials.email}`;
+        // 1. Clean the incoming email (remove spaces and force lowercase)
+        const cleanEmail = String(credentials.email).trim().toLowerCase();
+
+        // 2. Tell SQL to lowercase the database email before comparing
+        const users = await sql`SELECT * FROM users WHERE LOWER(email) = ${cleanEmail}`;
         const user = users[0];
 
         if (!user || !user.password_hash) return null;
@@ -62,7 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id; // <-- The fix is right here!
+        token.id = user.id; 
         token.role = user.role;
         token.store_id = user.store_id;
       }
@@ -70,7 +74,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async session({ session, token }: any) {
       if (token && session.user) {
-        session.user.id = token.id; // <-- And here!
+        session.user.id = token.id; 
         session.user.role = token.role;
         session.user.store_id = token.store_id;
       }

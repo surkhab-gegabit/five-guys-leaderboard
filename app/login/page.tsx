@@ -11,15 +11,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
+    // FIX: Automatically remove accidental spaces and make it lowercase
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
       const res = await signIn("credentials", {
-        email,
-        password,
+        email: cleanEmail,
+        password: password, // Passwords are case-sensitive, so we don't lowercase this!
         redirect: false,
       });
 
@@ -34,7 +37,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md border-t-8 border-[#DA291C]">
