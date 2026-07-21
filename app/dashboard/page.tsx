@@ -97,7 +97,7 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // --- STORE MANAGEMENT (NEW) ---
+  // --- STORE MANAGEMENT ---
   async function addStore(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -121,26 +121,23 @@ export default async function DashboardPage(props: DashboardProps) {
       return;
     }
 
-    // 1. Admin Protection: Transfer any Area Managers out of the doomed store to a safe location
     const safeStoreId = allStoresResult.find(s => s.id !== targetStoreId)?.id;
     await sql`UPDATE users SET store_id = ${safeStoreId} WHERE store_id = ${targetStoreId} AND role = 'area_manager'`;
 
-    // 2. Cascade Delete: Wipe out standard employees and their points history in this store
     await sql`DELETE FROM points_log WHERE employee_id IN (SELECT id FROM users WHERE store_id = ${targetStoreId})`;
     await sql`DELETE FROM users WHERE store_id = ${targetStoreId}`;
-
-    // 3. Final Delete: Remove the store itself
     await sql`DELETE FROM stores WHERE id = ${targetStoreId}`;
 
     revalidatePath("/dashboard");
     redirect("/dashboard"); 
   }
 
-  // --- FETCH LEADERBOARD DATA ---
+  // --- FETCH LEADERBOARD DATA (UPDATED) ---
+  // Notice the addition of "AND role = 'employee'" to hide managers!
   const leaderboard = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
-    WHERE store_id = ${safeStoreId}
+    WHERE store_id = ${safeStoreId} AND role = 'employee'
     ORDER BY total_points DESC
   `) as LeaderboardUser[];
 
@@ -264,7 +261,6 @@ export default async function DashboardPage(props: DashboardProps) {
             storeId={safeStoreId}
           />
 
-          {/* NEW: ADMIN STORE MANAGEMENT PANEL */}
           {isAreaManager && (
             <StoreManager 
               storeId={safeStoreId} 
