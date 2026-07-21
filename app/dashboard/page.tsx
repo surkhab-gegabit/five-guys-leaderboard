@@ -55,7 +55,6 @@ export default async function DashboardPage(props: DashboardProps) {
     const role = formData.get("role")?.toString() || "employee";
     const targetStoreId = parseInt(formData.get("store_id")?.toString() || "1"); 
     
-    // Extra security check: Prevent store managers from hacking the form to create area_managers or store_managers
     if (currentRole === "store_manager" && (role === "store_manager" || role === "area_manager")) {
       throw new Error("Unauthorized role assignment");
     }
@@ -132,7 +131,6 @@ export default async function DashboardPage(props: DashboardProps) {
     redirect("/dashboard"); 
   }
 
-  // UPDATED QUERY: Get everyone who IS NOT a Store Manager or Area Manager
   const leaderboard = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
@@ -140,7 +138,6 @@ export default async function DashboardPage(props: DashboardProps) {
     ORDER BY total_points DESC
   `) as LeaderboardUser[];
 
-  // ONLY MANAGERS for the management list
   const storeManagers = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
@@ -161,9 +158,15 @@ export default async function DashboardPage(props: DashboardProps) {
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
               {isManager && (
-                <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
-                  Activity Feed
-                </Link>
+                <>
+                  <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                    Activity Feed
+                  </Link>
+                  {/* ADDED SECURITY LINK HERE */}
+                  <Link href="/dashboard/security" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                    Security
+                  </Link>
+                </>
               )}
               <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" 
@@ -251,7 +254,6 @@ export default async function DashboardPage(props: DashboardProps) {
                     <option value="employee">Employee</option>
                     <option value="shift_leader">Shift Leader</option>
                     <option value="agm">AGM</option>
-                    {/* ONLY SHOW STORE MANAGER OPTION TO THE ADMIN */}
                     {isAreaManager && <option value="store_manager">Store Manager</option>}
                   </select>
                 </div>
