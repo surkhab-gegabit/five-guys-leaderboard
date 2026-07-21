@@ -5,14 +5,16 @@ import { useState } from "react";
 type User = { id: string; name: string; role: string; total_points: number };
 
 export default function InteractiveLeaderboard({ 
-  leaderboard, 
+  leaderboard,
+  managers,
   userRole, 
   updatePoints,
   deleteUser,
   resetPoints,
   storeId
 }: { 
-  leaderboard: User[], 
+  leaderboard: User[],
+  managers: User[],
   userRole: string,
   updatePoints: (userId: string, points: number, reason: string) => Promise<void>,
   deleteUser: (userId: string) => Promise<void>,
@@ -61,6 +63,8 @@ export default function InteractiveLeaderboard({
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden border-t-8 border-[#DA291C] relative">
+      
+      {/* MAIN LEADERBOARD SECTION */}
       <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Employee Leaderboard</h2>
         {isManager && (
@@ -86,11 +90,15 @@ export default function InteractiveLeaderboard({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
+            {leaderboard.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500 font-medium">No employees added to this store yet.</td>
+              </tr>
+            )}
             {leaderboard.map((user, index) => (
               <tr key={user.id} className="hover:bg-red-50 transition-colors group">
                 <td className="px-6 py-4 font-black text-gray-400">#{index + 1}</td>
                 <td className="px-6 py-4 font-bold text-gray-900">{user.name}</td>
-                {/* CLEANED UP ADMIN ROLE DISPLAY HERE */}
                 <td className="px-6 py-4 text-sm font-semibold text-gray-500 capitalize">
                   {user.role === "area_manager" ? "Admin" : user.role.replace('_', ' ')}
                 </td>
@@ -99,18 +107,13 @@ export default function InteractiveLeaderboard({
                 {isManager && (
                   <td className="px-6 py-4 text-center">
                     <div className="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      
                       {userRole === "store_manager" && (
                         <>
                           <button onClick={() => handleOpenModal(user, false)} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold w-8 h-8 rounded-full shadow-sm">-</button>
                           <button onClick={() => handleOpenModal(user, true)} className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-full shadow-sm">+</button>
                         </>
                       )}
-                      
-                      <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm">
-                        ✕
-                      </button>
-                      
+                      <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm">✕</button>
                     </div>
                   </td>
                 )}
@@ -120,6 +123,34 @@ export default function InteractiveLeaderboard({
         </table>
       </div>
 
+      {/* NEW: STORE MANAGEMENT TEAM SECTION */}
+      {managers && managers.length > 0 && (
+        <div className="bg-gray-50 border-t border-gray-200 p-6">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Store Management Team</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {managers.map((manager) => (
+              <div key={manager.id} className="bg-white border-2 border-gray-200 rounded-lg p-3 flex justify-between items-center shadow-sm">
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">{manager.name}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{manager.role.replace('_', ' ')}</p>
+                </div>
+                {/* Only Admin can delete Store Managers */}
+                {userRole === "area_manager" && (
+                  <button 
+                    onClick={() => handleDelete(manager)} 
+                    title="Remove Manager" 
+                    className="bg-gray-100 hover:bg-red-600 hover:text-white text-gray-600 font-bold w-7 h-7 rounded-full transition-colors flex items-center justify-center text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* POINTS MODAL */}
       {selectedUser && (
         <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 rounded-xl">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">

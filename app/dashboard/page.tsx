@@ -43,7 +43,6 @@ export default async function DashboardPage(props: DashboardProps) {
   const safeStoreId = activeStoreId || 1;
   const activeStoreName = allStores.find(s => s.id === activeStoreId)?.name || "Unknown Store";
 
-  // --- EMPLOYEE MANAGEMENT ---
   async function addEmployee(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -97,7 +96,6 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // --- STORE MANAGEMENT ---
   async function addStore(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -116,10 +114,7 @@ export default async function DashboardPage(props: DashboardProps) {
     if (currentSession?.user?.role !== "area_manager") return;
 
     const allStoresResult = await sql`SELECT id FROM stores`;
-    if (allStoresResult.length <= 1) {
-      console.error("Cannot delete the last remaining store.");
-      return;
-    }
+    if (allStoresResult.length <= 1) return;
 
     const safeStoreId = allStoresResult.find(s => s.id !== targetStoreId)?.id;
     await sql`UPDATE users SET store_id = ${safeStoreId} WHERE store_id = ${targetStoreId} AND role = 'area_manager'`;
@@ -132,13 +127,20 @@ export default async function DashboardPage(props: DashboardProps) {
     redirect("/dashboard"); 
   }
 
-  // --- FETCH LEADERBOARD DATA (UPDATED) ---
-  // Notice the addition of "AND role = 'employee'" to hide managers!
+  // ONLY EMPLOYEES for the main leaderboard
   const leaderboard = (await sql`
     SELECT id, name, role, total_points 
     FROM users 
     WHERE store_id = ${safeStoreId} AND role = 'employee'
     ORDER BY total_points DESC
+  `) as LeaderboardUser[];
+
+  // ONLY MANAGERS for the management list
+  const storeManagers = (await sql`
+    SELECT id, name, role, total_points 
+    FROM users 
+    WHERE store_id = ${safeStoreId} AND role = 'store_manager'
+    ORDER BY name ASC
   `) as LeaderboardUser[];
 
   const employeeRankIndex = leaderboard.findIndex(u => u.id === userId);
@@ -254,6 +256,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
           <InteractiveLeaderboard 
             leaderboard={leaderboard} 
+            managers={storeManagers} // Passed the managers in!
             userRole={userRole} 
             updatePoints={updatePoints} 
             deleteUser={deleteUser}
