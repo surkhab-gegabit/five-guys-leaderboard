@@ -158,15 +158,9 @@ export default async function DashboardPage(props: DashboardProps) {
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
               {isManager && (
-                <>
-                  <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
-                    Activity Feed
-                  </Link>
-                  {/* ADDED SECURITY LINK HERE */}
-                  <Link href="/dashboard/security" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
-                    Security
-                  </Link>
-                </>
+                <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                  Activity Feed
+                </Link>
               )}
               <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" 
