@@ -63,10 +63,17 @@ export default function InteractiveLeaderboard({
     }
   };
 
-  const handleRoleChange = async (user: User, newRole: string) => {
+  // NEW: Updated to handle React state properly without snapping back
+  const handleRoleChange = async (e: React.ChangeEvent<HTMLSelectElement>, user: User) => {
+    const newRole = e.target.value;
+    if (newRole === user.role) return;
+
     const formattedRole = newRole.replace('_', ' ');
     if (window.confirm(`Are you sure you want to change ${user.name}'s role to ${formattedRole}?`)) {
       await changeRole(user.id, newRole);
+    } else {
+      // If they click cancel on the popup, snap the dropdown visually back to their actual role
+      e.target.value = user.role;
     }
   };
 
@@ -117,9 +124,11 @@ export default function InteractiveLeaderboard({
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       
+                      {/* FIX: Using defaultValue and a unique key forces React to properly update */}
                       <select
-                        value={user.role}
-                        onChange={(e) => handleRoleChange(user, e.target.value)}
+                        key={user.role} 
+                        defaultValue={user.role}
+                        onChange={(e) => handleRoleChange(e, user)}
                         className="text-[10px] font-bold bg-gray-100 border-none text-gray-700 rounded-md px-2 py-1.5 uppercase cursor-pointer hover:bg-gray-200 outline-none shadow-sm"
                       >
                         <option value="employee">Employee</option>
