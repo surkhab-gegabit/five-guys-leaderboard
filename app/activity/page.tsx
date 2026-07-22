@@ -1,4 +1,4 @@
-import { auth } from "../../auth";
+import { auth, signOut } from "../../auth";
 import { redirect } from "next/navigation";
 import { sql } from "../../lib/db";
 import Link from "next/link";
@@ -30,23 +30,6 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
 
   const userRole = session.user.role as string;
   const isAreaManager = userRole === "area_manager";
-  const isStoreManager = userRole === "store_manager";
-  const isManager = isAreaManager || isStoreManager;
-
-  // STRICT SECURITY: Block regular employees
-  if (!isManager) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg text-center border-t-8 border-[#DA291C]">
-          <h1 className="text-2xl font-black text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-500 mb-6 font-medium">Only store managers can view the audit logs.</p>
-          <Link href="/dashboard" className="bg-gray-900 hover:bg-black text-white font-bold py-3 px-6 rounded-md transition-colors shadow-md">
-            Return to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   // 3. Fetch stores to build the Area Manager menu
   const allStores = (await sql`SELECT * FROM stores ORDER BY id`) as Store[];
@@ -94,12 +77,23 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
               {/* Dynamic link so returning to the dashboard remembers the store you were looking at */}
-              <Link href={`/dashboard?store=${activeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors">
-                ← Back to Leaderboard
+              <Link href={`/dashboard?store=${activeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                ← Dashboard
               </Link>
-              <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400">
+              
+              <Link href="/dashboard/settings" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider hidden sm:block">
+                Settings
+              </Link>
+
+              <span className="text-sm font-medium hidden md:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name}
               </span>
+
+              <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
+                <button type="submit" className="bg-white text-[#DA291C] px-4 py-2 rounded-md text-sm font-bold shadow-sm hover:bg-gray-100 transition-colors">
+                  LOG OUT
+                </button>
+              </form>
             </div>
           </div>
         </div>
