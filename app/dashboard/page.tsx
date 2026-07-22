@@ -157,13 +157,13 @@ export default async function DashboardPage(props: DashboardProps) {
           <div className="flex justify-between h-16 items-center">
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
-              {isManager && (
-                <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
-                  Activity Feed
-                </Link>
-              )}
               
-              {/* SETTINGS LINK ADDED HERE FOR EVERYONE */}
+              {/* ACTIVITY FEED LINK NOW AVAILABLE TO EVERYONE */}
+              <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                Activity Feed
+              </Link>
+              
+              {/* SETTINGS LINK AVAILABLE TO EVERYONE */}
               <Link href="/dashboard/settings" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
                 Settings
               </Link>
