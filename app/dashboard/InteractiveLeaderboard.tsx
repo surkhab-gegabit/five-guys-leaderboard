@@ -11,7 +11,8 @@ export default function InteractiveLeaderboard({
   updatePoints,
   deleteUser,
   resetPoints,
-  storeId
+  storeId,
+  changeRole
 }: { 
   leaderboard: User[],
   managers: User[],
@@ -19,7 +20,8 @@ export default function InteractiveLeaderboard({
   updatePoints: (userId: string, points: number, reason: string) => Promise<void>,
   deleteUser: (userId: string) => Promise<void>,
   resetPoints: (storeId: number) => Promise<void>,
-  storeId: number
+  storeId: number,
+  changeRole: (userId: string, newRole: string) => Promise<void>
 }) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(true);
@@ -58,6 +60,13 @@ export default function InteractiveLeaderboard({
   const handleDelete = async (user: User) => {
     if (window.confirm(`Are you sure you want to completely remove ${user.name}? This will also delete their points history.`)) {
       await deleteUser(user.id);
+    }
+  };
+
+  const handleRoleChange = async (user: User, newRole: string) => {
+    const formattedRole = newRole.replace('_', ' ');
+    if (window.confirm(`Are you sure you want to change ${user.name}'s role to ${formattedRole}?`)) {
+      await changeRole(user.id, newRole);
     }
   };
 
@@ -106,14 +115,25 @@ export default function InteractiveLeaderboard({
                 
                 {isManager && (
                   <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user, e.target.value)}
+                        className="text-[10px] font-bold bg-gray-100 border-none text-gray-700 rounded-md px-2 py-1.5 uppercase cursor-pointer hover:bg-gray-200 outline-none shadow-sm"
+                      >
+                        <option value="employee">Employee</option>
+                        <option value="shift_leader">Shift Leader</option>
+                        <option value="agm">AGM</option>
+                      </select>
+
                       {userRole === "store_manager" && (
                         <>
-                          <button onClick={() => handleOpenModal(user, false)} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold w-8 h-8 rounded-full shadow-sm">-</button>
-                          <button onClick={() => handleOpenModal(user, true)} className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-full shadow-sm">+</button>
+                          <button onClick={() => handleOpenModal(user, false)} title="Deduct Points" className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">-</button>
+                          <button onClick={() => handleOpenModal(user, true)} title="Add Points" className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">+</button>
                         </>
                       )}
-                      <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm">✕</button>
+                      <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">✕</button>
                     </div>
                   </td>
                 )}
@@ -123,7 +143,7 @@ export default function InteractiveLeaderboard({
         </table>
       </div>
 
-      {/* NEW: STORE MANAGEMENT TEAM SECTION */}
+      {/* STORE MANAGEMENT TEAM SECTION */}
       {managers && managers.length > 0 && (
         <div className="bg-gray-50 border-t border-gray-200 p-6">
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Store Management Team</h3>
@@ -134,7 +154,6 @@ export default function InteractiveLeaderboard({
                   <p className="font-bold text-gray-900 text-sm">{manager.name}</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{manager.role.replace('_', ' ')}</p>
                 </div>
-                {/* Only Admin can delete Store Managers */}
                 {userRole === "area_manager" && (
                   <button 
                     onClick={() => handleDelete(manager)} 

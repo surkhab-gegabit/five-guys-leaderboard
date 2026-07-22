@@ -90,6 +90,23 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
+  // --- NEW FUNCTION: Change User Role ---
+  async function changeRole(targetId: string, newRole: string) {
+    "use server";
+    const currentSession = await auth();
+    const currentRole = currentSession?.user?.role as string;
+    if (!currentSession || (currentRole !== "area_manager" && currentRole !== "store_manager")) return;
+
+    // Security: Store managers cannot promote someone to store manager or area manager
+    if (currentRole === "store_manager" && (newRole === "store_manager" || newRole === "area_manager")) {
+      throw new Error("Unauthorized role assignment");
+    }
+
+    await sql`UPDATE users SET role = ${newRole} WHERE id = ${targetId}`;
+    revalidatePath("/dashboard");
+  }
+  // ---------------------------------------
+
   async function resetPoints(targetStoreId: number) {
     "use server";
     const currentSession = await auth();
@@ -158,12 +175,10 @@ export default async function DashboardPage(props: DashboardProps) {
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
               
-              {/* ACTIVITY FEED LINK NOW AVAILABLE TO EVERYONE */}
               <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
                 Activity Feed
               </Link>
               
-              {/* SETTINGS LINK AVAILABLE TO EVERYONE */}
               <Link href="/dashboard/settings" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
                 Settings
               </Link>
@@ -272,6 +287,7 @@ export default async function DashboardPage(props: DashboardProps) {
             deleteUser={deleteUser}
             resetPoints={resetPoints}
             storeId={safeStoreId}
+            changeRole={changeRole} 
           />
 
           {isAreaManager && (
