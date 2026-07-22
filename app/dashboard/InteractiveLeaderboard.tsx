@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 type User = { id: string; name: string; role: string; total_points: number };
 
@@ -23,6 +24,9 @@ export default function InteractiveLeaderboard({
   storeId: number,
   changeRole: (userId: string, newRole: string) => Promise<void>
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(true);
   const [pointAmount, setPointAmount] = useState<number>(1);
@@ -63,16 +67,18 @@ export default function InteractiveLeaderboard({
     }
   };
 
-  // NEW: Updated to handle React state properly without snapping back
-  const handleRoleChange = async (e: React.ChangeEvent<HTMLSelectElement>, user: User) => {
+  // FIX: Wrapped in startTransition and router.refresh() to force the screen to update!
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>, user: User) => {
     const newRole = e.target.value;
     if (newRole === user.role) return;
 
     const formattedRole = newRole.replace('_', ' ');
     if (window.confirm(`Are you sure you want to change ${user.name}'s role to ${formattedRole}?`)) {
-      await changeRole(user.id, newRole);
+      startTransition(async () => {
+        await changeRole(user.id, newRole);
+        router.refresh(); 
+      });
     } else {
-      // If they click cancel on the popup, snap the dropdown visually back to their actual role
       e.target.value = user.role;
     }
   };
@@ -86,7 +92,7 @@ export default function InteractiveLeaderboard({
         {isManager && (
           <button 
             onClick={handleReset} 
-            disabled={isResetting}
+            disabled={isResetting || isPending}
             className="text-xs font-bold bg-red-50 text-red-700 px-4 py-2 rounded-md hover:bg-red-100 transition-colors uppercase tracking-wider"
           >
             {isResetting ? "Resetting..." : "Reset All Points"}
@@ -112,7 +118,7 @@ export default function InteractiveLeaderboard({
               </tr>
             )}
             {leaderboard.map((user, index) => (
-              <tr key={user.id} className="hover:bg-red-50 transition-colors group">
+              <tr key={user.id} className={`hover:bg-red-50 transition-colors group ${isPending ? 'opacity-50' : ''}`}>
                 <td className="px-6 py-4 font-black text-gray-400">#{index + 1}</td>
                 <td className="px-6 py-4 font-bold text-gray-900">{user.name}</td>
                 <td className="px-6 py-4 text-sm font-semibold text-gray-500 capitalize">
@@ -124,12 +130,13 @@ export default function InteractiveLeaderboard({
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       
-                      {/* FIX: Using defaultValue and a unique key forces React to properly update */}
+                      {/* FIX: Added a unique key to force a clean remount when the database updates */}
                       <select
-                        key={user.role} 
+                        key={`${user.id}-${user.role}`} 
                         defaultValue={user.role}
                         onChange={(e) => handleRoleChange(e, user)}
-                        className="text-[10px] font-bold bg-gray-100 border-none text-gray-700 rounded-md px-2 py-1.5 uppercase cursor-pointer hover:bg-gray-200 outline-none shadow-sm"
+                        disabled={isPending}
+                        className="text-[10px] font-bold bg-gray-100 border-none text-gray-700 rounded-md px-2 py-1.5 uppercase cursor-pointer hover:bg-gray-200 outline-none shadow-sm disabled:cursor-not-allowed"
                       >
                         <option value="employee">Employee</option>
                         <option value="shift_leader">Shift Leader</option>
@@ -138,11 +145,11 @@ export default function InteractiveLeaderboard({
 
                       {userRole === "store_manager" && (
                         <>
-                          <button onClick={() => handleOpenModal(user, false)} title="Deduct Points" className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">-</button>
-                          <button onClick={() => handleOpenModal(user, true)} title="Add Points" className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">+</button>
+                          <button onClick={() => handleOpenModal(user, false)} title="Deduct Points" disabled={isPending} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">-</button>
+                          <button onClick={() => handleOpenModal(user, true)} title="Add Points" disabled={isPending} className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">+</button>
                         </>
                       )}
-                      <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">✕</button>
+                      <button onClick={() => handleDelete(user)} title="Delete Employee" disabled={isPending} className="bg-gray-800 hover:bg-black text-white font-bold w-8 h-8 rounded-full shadow-sm flex items-center justify-center">✕</button>
                     </div>
                   </td>
                 )}
