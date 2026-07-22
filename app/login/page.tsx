@@ -27,14 +27,14 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        // Intercept our custom error codes from auth.ts
-        if (res.error === "2FA_REQUIRED") {
+        // NextAuth hides our custom error codes to prevent credential hacking.
+        // If we get an error and we haven't shown the 2FA box yet, we switch to it!
+        if (!showTwoFactor) {
           setShowTwoFactor(true);
           setError(""); 
-        } else if (res.error === "INVALID_2FA") {
-          setError("Invalid 6-digit code. Please try again.");
         } else {
-          setError("Invalid email or password.");
+          // If they are already on the 2FA screen and get an error, the code (or password) was definitely wrong.
+          setError("Invalid email, password, or 6-digit code.");
         }
         setLoading(false);
       } else {
@@ -53,7 +53,7 @@ export default function LoginPage() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* STEP 1: Email and Password (Hides if 2FA is needed) */}
+          {/* STEP 1: Email and Password */}
           <div className={showTwoFactor ? "hidden" : "block"}>
             <div className="space-y-4">
               <div>
@@ -81,11 +81,20 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* STEP 2: The 2FA Code Input (Shows if 2FA is needed) */}
+          {/* STEP 2: The 2FA Code Input */}
           {showTwoFactor && (
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Authenticator Code</label>
-              <p className="text-xs text-gray-500 mb-3">Open your authenticator app to view your 6-digit code.</p>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Authenticator Code</label>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowTwoFactor(false); setToken(""); }} 
+                  className="text-xs text-[#DA291C] font-bold hover:underline"
+                >
+                  ← Back
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">If your credentials are correct, a code was sent to your email.</p>
               <input 
                 type="text" 
                 required={showTwoFactor}
