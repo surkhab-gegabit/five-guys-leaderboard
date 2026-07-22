@@ -162,6 +162,12 @@ export default async function DashboardPage(props: DashboardProps) {
                   Activity Feed
                 </Link>
               )}
+              
+              {/* SETTINGS LINK ADDED HERE FOR EVERYONE */}
+              <Link href="/dashboard/settings" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+                Settings
+              </Link>
+
               <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" 
                   ? "Admin Manager" 
