@@ -85,7 +85,7 @@ export default function InteractiveLeaderboard({
   };
 
   const handleReset = async () => {
-    if (window.confirm("Are you sure you want to reset ALL points? This starts a new month and cannot be undone.")) {
+    if (window.confirm("Are you sure you want to reset ALL points? This cannot be undone.")) {
       setIsResetting(true);
       await resetPoints(storeId);
       setIsResetting(false);
@@ -135,20 +135,17 @@ export default function InteractiveLeaderboard({
     <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-gray-100 transition-all">
       
       {/* HEADER - Crisp, White, Brand-Focused */}
-      <div className="px-8 py-8 border-b border-gray-100 flex justify-between items-end bg-white">
-        <div>
-          <p className="text-xs font-bold text-[#DA291C] uppercase tracking-widest mb-1">Current Season</p>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-            Crew Leaderboard
-          </h2>
-        </div>
+      <div className="px-8 py-8 border-b border-gray-100 flex justify-between items-center bg-white">
+        <h2 className="text-3xl font-black text-gray-900 tracking-tight uppercase">
+          Leaderboard
+        </h2>
         {isManager && (
           <button 
             onClick={handleReset} 
             disabled={isResetting}
             className="text-xs font-bold bg-gray-50 text-gray-600 px-5 py-2.5 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors uppercase tracking-widest disabled:opacity-50 border border-gray-200"
           >
-            {isResetting ? "Resetting..." : "Reset Season"}
+            {isResetting ? "Resetting..." : "Reset All Points"}
           </button>
         )}
       </div>
