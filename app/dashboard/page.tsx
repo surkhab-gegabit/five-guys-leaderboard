@@ -56,7 +56,7 @@ export default async function DashboardPage(props: DashboardProps) {
     const targetStoreId = parseInt(formData.get("store_id")?.toString() || "1"); 
     
     if (currentRole === "store_manager" && (role === "store_manager" || role === "area_manager")) {
-      throw new Error("Unauthorized role assignment");
+      return; // FIX: Silently fail instead of crashing the app
     }
     
     const hash = await bcrypt.hash(password, 10);
@@ -71,7 +71,7 @@ export default async function DashboardPage(props: DashboardProps) {
     const currentRole = currentSession?.user?.role as string;
     
     if (!managerId || currentRole !== "store_manager") {
-      throw new Error("Unauthorized");
+      return; // FIX: Silently fail instead of crashing the app
     }
 
     await sql`INSERT INTO points_log (employee_id, manager_id, points_changed, reason) VALUES (${employeeId}, ${managerId}, ${pointsChange}, ${reason})`;
@@ -99,7 +99,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
     // Security: Store managers cannot promote someone to store manager or area manager
     if (currentRole === "store_manager" && (newRole === "store_manager" || newRole === "area_manager")) {
-      throw new Error("Unauthorized role assignment");
+      return; // FIX: Silently fail instead of crashing the app
     }
 
     await sql`UPDATE users SET role = ${newRole} WHERE id = ${targetId}`;
