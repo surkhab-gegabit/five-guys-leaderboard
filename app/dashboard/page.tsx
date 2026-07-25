@@ -56,7 +56,7 @@ export default async function DashboardPage(props: DashboardProps) {
     const targetStoreId = parseInt(formData.get("store_id")?.toString() || "1"); 
     
     if (currentRole === "store_manager" && (role === "store_manager" || role === "area_manager")) {
-      return; // FIX: Silently fail instead of crashing the app
+      return; 
     }
     
     const hash = await bcrypt.hash(password, 10);
@@ -71,7 +71,7 @@ export default async function DashboardPage(props: DashboardProps) {
     const currentRole = currentSession?.user?.role as string;
     
     if (!managerId || currentRole !== "store_manager") {
-      return; // FIX: Silently fail instead of crashing the app
+      return; 
     }
 
     await sql`INSERT INTO points_log (employee_id, manager_id, points_changed, reason) VALUES (${employeeId}, ${managerId}, ${pointsChange}, ${reason})`;
@@ -90,20 +90,24 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // --- NEW FUNCTION: Change User Role ---
+  // --- NEW FUNCTION: Change User Role (Bulletproof Version) ---
   async function changeRole(targetId: string, newRole: string) {
     "use server";
-    const currentSession = await auth();
-    const currentRole = currentSession?.user?.role as string;
-    if (!currentSession || (currentRole !== "area_manager" && currentRole !== "store_manager")) return;
+    try {
+      const currentSession = await auth();
+      const currentRole = currentSession?.user?.role as string;
+      if (!currentSession || (currentRole !== "area_manager" && currentRole !== "store_manager")) return;
 
-    // Security: Store managers cannot promote someone to store manager or area manager
-    if (currentRole === "store_manager" && (newRole === "store_manager" || newRole === "area_manager")) {
-      return; // FIX: Silently fail instead of crashing the app
+      // Security: Store managers cannot promote someone to store manager or area manager
+      if (currentRole === "store_manager" && (newRole === "store_manager" || newRole === "area_manager")) {
+        return; 
+      }
+
+      await sql`UPDATE users SET role = ${newRole} WHERE id = ${targetId}`;
+      revalidatePath("/dashboard");
+    } catch (error) {
+      console.error("Database error while changing role:", error);
     }
-
-    await sql`UPDATE users SET role = ${newRole} WHERE id = ${targetId}`;
-    revalidatePath("/dashboard");
   }
   // ---------------------------------------
 
