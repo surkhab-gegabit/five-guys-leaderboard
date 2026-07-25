@@ -90,23 +90,26 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // --- NEW FUNCTION: Change User Role (Bulletproof Version) ---
+  // --- UPDATED FUNCTION: Now returns errors to the frontend ---
   async function changeRole(targetId: string, newRole: string) {
     "use server";
     try {
       const currentSession = await auth();
       const currentRole = currentSession?.user?.role as string;
-      if (!currentSession || (currentRole !== "area_manager" && currentRole !== "store_manager")) return;
+      if (!currentSession || (currentRole !== "area_manager" && currentRole !== "store_manager")) {
+        return { error: "Unauthorized." };
+      }
 
-      // Security: Store managers cannot promote someone to store manager or area manager
       if (currentRole === "store_manager" && (newRole === "store_manager" || newRole === "area_manager")) {
-        return; 
+        return { error: "Store managers cannot promote to this level." };
       }
 
       await sql`UPDATE users SET role = ${newRole} WHERE id = ${targetId}`;
       revalidatePath("/dashboard");
-    } catch (error) {
+      return { success: true };
+    } catch (error: any) {
       console.error("Database error while changing role:", error);
+      return { error: "The database rejected this role change. Check your Neon column restrictions." };
     }
   }
   // ---------------------------------------

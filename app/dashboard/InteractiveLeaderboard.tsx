@@ -21,7 +21,7 @@ export default function InteractiveLeaderboard({
   deleteUser: (userId: string) => Promise<void>,
   resetPoints: (storeId: number) => Promise<void>,
   storeId: number,
-  changeRole: (userId: string, newRole: string) => Promise<void>
+  changeRole: (userId: string, newRole: string) => Promise<{ success?: boolean; error?: string } | undefined>
 }) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAdding, setIsAdding] = useState(true);
@@ -63,7 +63,7 @@ export default function InteractiveLeaderboard({
     }
   };
 
-  // FIX: Converted to standard async/await and added a local locking mechanism
+  // UPDATED: Now it checks for the error from the backend and alerts you!
   const handleRoleChange = async (e: React.ChangeEvent<HTMLSelectElement>, user: User) => {
     const newRole = e.target.value;
     if (newRole === user.role) return;
@@ -71,17 +71,22 @@ export default function InteractiveLeaderboard({
     const formattedRole = newRole.replace('_', ' ');
     if (window.confirm(`Are you sure you want to change ${user.name}'s role to ${formattedRole}?`)) {
       const selectElement = e.target;
-      selectElement.disabled = true; // Lock the dropdown while saving
+      selectElement.disabled = true; 
       
       try {
-        await changeRole(user.id, newRole);
+        const result = await changeRole(user.id, newRole);
+        if (result && result.error) {
+          alert(result.error);
+          selectElement.value = user.role; // Snaps back if the DB rejects it
+        }
       } catch (error) {
-        selectElement.value = user.role; // Snap back if it fails
+        alert("Something went wrong connecting to the database.");
+        selectElement.value = user.role; 
       } finally {
-        selectElement.disabled = false; // Unlock the dropdown
+        selectElement.disabled = false; 
       }
     } else {
-      e.target.value = user.role; // Snap back if they click cancel
+      e.target.value = user.role; // Snaps back if you click cancel
     }
   };
 
@@ -132,7 +137,6 @@ export default function InteractiveLeaderboard({
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       
-                      {/* FIX: Simplified uncontrolled select that locks when waiting for database */}
                       <select
                         key={`${user.id}-${user.role}`} 
                         defaultValue={user.role}
