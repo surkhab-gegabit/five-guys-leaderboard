@@ -9,6 +9,7 @@ import Link from "next/link";
 
 type LeaderboardUser = { id: string; name: string; role: string; total_points: number };
 type Store = { id: number; name: string };
+type PointLog = { id: number; points_changed: number; reason: string; manager_name: string };
 
 interface DashboardProps {
   searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -90,7 +91,6 @@ export default async function DashboardPage(props: DashboardProps) {
     revalidatePath("/dashboard");
   }
 
-  // --- UPDATED FUNCTION: Now returns errors to the frontend ---
   async function changeRole(targetId: string, newRole: string) {
     "use server";
     try {
@@ -112,7 +112,6 @@ export default async function DashboardPage(props: DashboardProps) {
       return { error: "The database rejected this role change. Check your Neon column restrictions." };
     }
   }
-  // ---------------------------------------
 
   async function resetPoints(targetStoreId: number) {
     "use server";
@@ -168,6 +167,19 @@ export default async function DashboardPage(props: DashboardProps) {
     WHERE store_id = ${safeStoreId} AND role = 'store_manager'
     ORDER BY name ASC
   `) as LeaderboardUser[];
+
+  // --- NEW: Fetching personal history for non-managers ---
+  let employeeHistory: PointLog[] = [];
+  if (!isManager) {
+    employeeHistory = (await sql`
+      SELECT p.id, p.points_changed, p.reason, u.name as manager_name
+      FROM points_log p
+      JOIN users u ON p.manager_id = u.id
+      WHERE p.employee_id = ${userId}
+      ORDER BY p.id DESC
+      LIMIT 10
+    `) as PointLog[];
+  }
 
   const employeeRankIndex = leaderboard.findIndex(u => u.id === userId);
   const employeeData = employeeRankIndex !== -1 ? leaderboard[employeeRankIndex] : null;
@@ -234,21 +246,45 @@ export default async function DashboardPage(props: DashboardProps) {
 
         <div className="space-y-8">
           
+          {/* NON-MANAGER VIEW: Welcome Card + History */}
           {!isManager && employeeData && (
-            <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl shadow-lg p-6 text-white flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900">
-              <div className="mb-4 md:mb-0 text-center md:text-left">
-                <h2 className="text-2xl font-black tracking-tight mb-1">Welcome back, {employeeData.name.split(' ')[0]}!</h2>
-                <p className="text-red-100 font-medium">Keep up the great work on your shifts.</p>
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl shadow-lg p-6 text-white flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900">
+                <div className="mb-4 md:mb-0 text-center md:text-left">
+                  <h2 className="text-2xl font-black tracking-tight mb-1">Welcome back, {employeeData.name.split(' ')[0]}!</h2>
+                  <p className="text-red-100 font-medium">Keep up the great work on your shifts.</p>
+                </div>
+                <div className="flex space-x-8 text-center md:text-right">
+                  <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
+                    <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Your Rank</p>
+                    <p className="text-4xl font-black">#{employeeRank}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
+                    <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Total Points</p>
+                    <p className="text-4xl font-black">{employeeData.total_points}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex space-x-8 text-center md:text-right">
-                <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
-                  <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Your Rank</p>
-                  <p className="text-4xl font-black">#{employeeRank}</p>
-                </div>
-                <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
-                  <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Total Points</p>
-                  <p className="text-4xl font-black">{employeeData.total_points}</p>
-                </div>
+
+              <div className="bg-white rounded-xl shadow-md p-6 border-t-4 border-gray-900">
+                <h3 className="text-lg font-black text-gray-900 mb-4">Your Recent Point History</h3>
+                {employeeHistory.length === 0 ? (
+                  <p className="text-gray-500 text-sm font-medium">No points awarded yet. Time to get on the board!</p>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {employeeHistory.map(log => (
+                      <div key={log.id} className="py-3 flex justify-between items-center group hover:bg-gray-50 px-2 rounded transition-colors">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{log.reason}</p>
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Awarded by {log.manager_name}</p>
+                        </div>
+                        <div className={`font-black text-xl ${log.points_changed > 0 ? 'text-[#DA291C]' : 'text-gray-800'}`}>
+                          {log.points_changed > 0 ? '+' : ''}{log.points_changed}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
