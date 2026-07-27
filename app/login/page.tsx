@@ -62,7 +62,7 @@ export default function LoginPage() {
             FIVE GUYS
           </div>
           <div className="mt-6 text-white font-bold tracking-[0.3em] text-sm uppercase drop-shadow-md">
-            Crew Leaderboard
+            Leaderboard
           </div>
         </div>
 
@@ -83,30 +83,31 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="relative overflow-hidden min-h-[220px]">
+            <div className="relative overflow-hidden">
+              {/* mode="wait" ensures the first form leaves before the second enters, removing the need for absolute positioning */}
               <AnimatePresence mode="wait">
                 
                 {/* STEP 1: CREDENTIALS */}
                 {step === 1 && (
                   <motion.form 
                     key="step-1"
-                    initial={{ x: -50, opacity: 0 }}
+                    initial={{ x: -30, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -50, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ x: -30, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     onSubmit={handleSubmit} 
-                    className="space-y-5 absolute w-full"
+                    className="space-y-5"
                   >
                     <div>
                       <label className="block text-[11px] font-black text-gray-500 mb-2 uppercase tracking-widest">
-                        Crew Email
+                        Email
                       </label>
                       <input 
                         type="email" 
                         required 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-[#DA291C] focus:ring-4 focus:ring-red-50 text-gray-900 bg-white font-bold outline-none transition-all"
+                        className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:border-[#DA291C] focus:ring-4 focus:ring-red-50 text-gray-900 bg-white font-bold outline-none transition-all"
                         placeholder="team@fiveguys.com"
                       />
                     </div>
@@ -119,17 +120,19 @@ export default function LoginPage() {
                         required 
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-[#DA291C] focus:ring-4 focus:ring-red-50 text-gray-900 bg-white font-bold outline-none transition-all"
+                        className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:border-[#DA291C] focus:ring-4 focus:ring-red-50 text-gray-900 bg-white font-bold outline-none transition-all"
                         placeholder="••••••••"
                       />
                     </div>
-                    <button 
-                      type="submit" 
-                      disabled={isLoading}
-                      className="w-full bg-[#DA291C] text-white font-black py-4 rounded-xl hover:bg-red-700 transition-colors uppercase tracking-widest mt-2 disabled:opacity-70"
-                    >
-                      {isLoading ? "Authenticating..." : "Login"}
-                    </button>
+                    <div className="pt-2">
+                      <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="w-full bg-[#DA291C] text-white font-black py-4 rounded-xl hover:bg-red-700 hover:shadow-lg transition-all uppercase tracking-widest disabled:opacity-70 disabled:hover:shadow-none"
+                      >
+                        {isLoading ? "Authenticating..." : "Login"}
+                      </button>
+                    </div>
                   </motion.form>
                 )}
 
@@ -137,12 +140,12 @@ export default function LoginPage() {
                 {step === 2 && (
                   <motion.form 
                     key="step-2"
-                    initial={{ x: 50, opacity: 0 }}
+                    initial={{ x: 30, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 50, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ x: 30, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     onSubmit={handleSubmit} 
-                    className="space-y-6 absolute w-full"
+                    className="space-y-6"
                   >
                     <div className="text-center">
                       <h3 className="text-xl font-black text-gray-900 tracking-tight mb-2">Check Your Email</h3>
@@ -164,11 +167,11 @@ export default function LoginPage() {
                       />
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 pt-2">
                       <button 
                         type="submit" 
                         disabled={isLoading || token.length !== 6}
-                        className="w-full bg-[#DA291C] text-white font-black py-4 rounded-xl hover:bg-red-700 transition-colors uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-[#DA291C] text-white font-black py-4 rounded-xl hover:bg-red-700 hover:shadow-lg transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                       >
                         {isLoading ? "Verifying..." : "Verify Code"}
                       </button>
@@ -176,7 +179,7 @@ export default function LoginPage() {
                       <button 
                         type="button"
                         onClick={() => { setStep(1); setToken(""); setError(""); }}
-                        className="w-full bg-white text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-50 border-2 border-gray-100 transition-colors text-xs uppercase tracking-widest"
+                        className="w-full bg-white text-gray-500 font-bold py-3.5 rounded-xl hover:bg-gray-50 border-2 border-gray-100 transition-colors text-xs uppercase tracking-widest"
                       >
                         ← Back to Login
                       </button>
