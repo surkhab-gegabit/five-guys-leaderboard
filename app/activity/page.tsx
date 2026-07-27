@@ -10,6 +10,7 @@ type AuditLog = {
   manager_name: string;
   points_changed: number;
   reason: string;
+  created_at: Date; // 1. Added created_at to the interface
 };
 
 type Store = { id: number; name: string };
@@ -51,19 +52,20 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
 
   const activeStoreName = allStores.find(s => s.id === activeStoreId)?.name || "Unknown Store";
 
-  // 5. DATABASE QUERY: Fetch logs ONLY for the active store
+  // 5. DATABASE QUERY: Fetch logs AND created_at ONLY for the active store
   const logs = (await sql`
     SELECT 
       points_log.id,
       points_log.points_changed,
       points_log.reason,
+      points_log.created_at,
       employee.name AS employee_name,
       manager.name AS manager_name
     FROM points_log
     JOIN users AS employee ON points_log.employee_id = employee.id
     JOIN users AS manager ON points_log.manager_id = manager.id
     WHERE employee.store_id = ${activeStoreId}
-    ORDER BY points_log.id DESC
+    ORDER BY points_log.created_at DESC
     LIMIT 50
   `) as AuditLog[];
 
@@ -140,12 +142,34 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
               <div className="space-y-6">
                 {logs.map((log) => {
                   const isPositive = log.points_changed > 0;
+                  
+                  // Format dates safely in Mountain Time
+                  const formattedDate = new Intl.DateTimeFormat('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    timeZone: 'America/Edmonton'
+                  }).format(new Date(log.created_at));
+                  
+                  const formattedTime = new Intl.DateTimeFormat('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZone: 'America/Edmonton'
+                  }).format(new Date(log.created_at));
+
                   return (
                     <div key={log.id} className="flex items-start space-x-4 p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors">
                       <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shadow-sm ${isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {isPositive ? '+' : ''}{log.points_changed}
                       </div>
                       <div className="flex-1 min-w-0">
+                        
+                        {/* 2. ADDED DATE AND TIME HERE */}
+                        <div className="flex items-center gap-2 mb-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                          <span>{formattedDate}</span>
+                          <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                          <span>{formattedTime}</span>
+                        </div>
+
                         <p className="text-sm font-bold text-gray-900">
                           {log.employee_name}
                         </p>
