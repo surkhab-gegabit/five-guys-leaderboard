@@ -24,6 +24,9 @@ export default function RecentHistory({ history }: { history: PointLog[] }) {
   // Slice the array to only show the currently visible amount
   const visibleHistory = history.slice(0, visibleCount);
   const hasMore = visibleCount < history.length;
+  
+  // We can show "Show Less" if they have expanded the list past 3
+  const canShowLess = visibleCount > 3;
 
   return (
     <div>
@@ -43,15 +46,27 @@ export default function RecentHistory({ history }: { history: PointLog[] }) {
         ))}
       </div>
       
-      {/* The Load More Button */}
-      {hasMore && (
-        <button
-          onClick={() => setVisibleCount(prev => prev + 3)}
-          className="mt-4 w-full bg-white hover:bg-gray-50 text-[#DA291C] font-bold py-3 rounded-xl border-2 border-gray-100 transition-colors text-xs uppercase tracking-widest shadow-sm"
-        >
-          Load More...
-        </button>
-      )}
+      {/* The Dynamic Buttons */}
+      <div className="mt-4 flex gap-3">
+        {canShowLess && (
+          <button
+            onClick={() => setVisibleCount(3)}
+            className="flex-1 bg-white hover:bg-gray-50 text-gray-600 font-bold py-3 rounded-xl border-2 border-gray-200 transition-colors text-xs uppercase tracking-widest shadow-sm"
+          >
+            Show Less
+          </button>
+        )}
+        
+        {hasMore && (
+          <button
+            onClick={() => setVisibleCount(prev => prev + 3)}
+            className="flex-1 bg-white hover:bg-red-50 text-[#DA291C] font-bold py-3 rounded-xl border-2 border-red-100 transition-colors text-xs uppercase tracking-widest shadow-sm"
+          >
+            Load More...
+          </button>
+        )}
+      </div>
+
       {!hasMore && history.length > 3 && (
         <p className="text-center text-xs text-gray-400 font-bold uppercase tracking-widest mt-4">
           End of History
