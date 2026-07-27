@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import InteractiveLeaderboard from "./InteractiveLeaderboard";
 import StoreManager from "./StoreManager";
+import RecentHistory from "./RecentHistory";
 import Link from "next/link";
 
 type LeaderboardUser = { id: string; name: string; role: string; total_points: number };
@@ -182,14 +183,15 @@ export default async function DashboardPage(props: DashboardProps) {
 
   let employeeHistory: PointLog[] = [];
   if (!isManager) {
+    // We increased this from 10 to 50 so your new "Load More" button has data to load!
     employeeHistory = (await sql`
       SELECT p.id, p.points_changed, p.reason, u.name as manager_name 
       FROM points_log p 
       JOIN users u ON p.manager_id = u.id 
       WHERE p.employee_id = ${userId} 
       ORDER BY p.id DESC 
-      LIMIT 10
-    `) as PointLog[];
+      LIMIT 50
+    `) as PointLog[]; 
   }
 
   const employeeRankIndex = leaderboard.findIndex(u => u.id === userId);
@@ -276,23 +278,10 @@ export default async function DashboardPage(props: DashboardProps) {
 
               <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
                 <h3 className="text-lg font-black text-gray-900 mb-4">Your Recent Point History</h3>
-                {employeeHistory.length === 0 ? (
-                  <p className="text-gray-500 text-sm font-medium">No points awarded yet. Time to get on the board!</p>
-                ) : (
-                  <div className="divide-y divide-gray-200">
-                    {employeeHistory.map(log => (
-                      <div key={log.id} className="py-3 flex justify-between items-center group hover:bg-gray-50 px-2 rounded transition-colors">
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{log.reason}</p>
-                          <p className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Awarded by {log.manager_name}</p>
-                        </div>
-                        <div className={`font-black text-lg md:text-xl ${log.points_changed > 0 ? 'text-[#DA291C]' : 'text-gray-800'}`}>
-                          {log.points_changed > 0 ? '+' : ''}{log.points_changed}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                
+                {/* NEW COMPONENT REPLACES THE HARDCODED LIST */}
+                <RecentHistory history={employeeHistory} />
+                
               </div>
             </div>
           )}
