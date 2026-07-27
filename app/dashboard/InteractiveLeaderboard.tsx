@@ -134,38 +134,39 @@ export default function InteractiveLeaderboard({
   return (
     <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-gray-100">
       
-      {/* HEADER - Crisp, White, Brand-Focused */}
-      <div className="px-8 py-8 border-b border-gray-100 flex justify-between items-center bg-white">
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight uppercase">
+      {/* MOBILE OPTIMIZED HEADER */}
+      <div className="px-5 py-6 md:px-8 md:py-8 border-b border-gray-100 flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between items-start sm:items-center bg-white">
+        <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase">
           Leaderboard
         </h2>
         {isManager && (
           <button 
             onClick={handleReset} 
             disabled={isResetting}
-            className="text-xs font-bold bg-gray-50 text-gray-600 px-5 py-2.5 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors uppercase tracking-widest disabled:opacity-50 border border-gray-200"
+            className="w-full sm:w-auto text-xs font-bold bg-gray-50 text-gray-600 px-5 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors uppercase tracking-widest disabled:opacity-50 border border-gray-200"
           >
             {isResetting ? "Resetting..." : "Reset All Points"}
           </button>
         )}
       </div>
       
+      {/* TABLE WRAPPER - Preserves scrolling on tiny screens */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
           <thead>
-            <tr className="bg-gray-50 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
-              <th className="px-8 py-4 font-bold w-24">Rank</th>
-              <th className="px-8 py-4 font-bold">Crew Member</th>
-              <th className="px-8 py-4 font-bold">Position</th>
-              <th className="px-8 py-4 font-bold text-right">Score</th>
-              {isManager && <th className="px-8 py-4 font-bold text-center">Manage</th>}
+            <tr className="bg-gray-50 text-gray-400 text-[10px] md:text-[11px] uppercase tracking-widest border-b border-gray-100">
+              <th className="px-4 py-3 md:px-8 md:py-4 font-bold w-16 md:w-24">Rank</th>
+              <th className="px-4 py-3 md:px-8 md:py-4 font-bold">Crew Member</th>
+              <th className="px-4 py-3 md:px-8 md:py-4 font-bold">Position</th>
+              <th className="px-4 py-3 md:px-8 md:py-4 font-bold text-right">Score</th>
+              {isManager && <th className="px-4 py-3 md:px-8 md:py-4 font-bold text-center">Manage</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 bg-white">
             <AnimatePresence>
               {leaderboard.length === 0 && (
                 <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <td colSpan={5} className="px-8 py-16 text-center text-gray-400 font-medium tracking-wide">
+                  <td colSpan={5} className="px-4 py-12 md:px-8 md:py-16 text-center text-gray-400 font-medium tracking-wide">
                     No crew members on the board yet.
                   </td>
                 </motion.tr>
@@ -180,26 +181,26 @@ export default function InteractiveLeaderboard({
                   transition={{ type: "spring", stiffness: 400, damping: 35 }}
                   className="hover:bg-gray-50/50 transition-colors group"
                 >
-                  <td className="px-8 py-6 text-3xl font-black">{getBadge(index)}</td>
-                  <td className="px-8 py-6 font-bold text-gray-900 tracking-tight text-lg">{user.name}</td>
-                  <td className="px-8 py-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-md text-[10px] font-bold bg-gray-100 text-gray-600 capitalize uppercase tracking-widest">
+                  <td className="px-4 py-4 md:px-8 md:py-6 text-2xl md:text-3xl font-black">{getBadge(index)}</td>
+                  <td className="px-4 py-4 md:px-8 md:py-6 font-bold text-gray-900 tracking-tight text-base md:text-lg">{user.name}</td>
+                  <td className="px-4 py-4 md:px-8 md:py-6">
+                    <span className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 rounded-md text-[9px] md:text-[10px] font-bold bg-gray-100 text-gray-600 capitalize uppercase tracking-widest">
                       {user.role === "area_manager" ? "Admin" : user.role.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-8 py-6 font-black text-right text-2xl text-[#DA291C]">
+                  <td className="px-4 py-4 md:px-8 md:py-6 font-black text-right text-xl md:text-2xl text-[#DA291C]">
                     {user.total_points}
                   </td>
                   
                   {isManager && (
-                    <td className="px-8 py-6 text-center">
-                      <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-4 py-4 md:px-8 md:py-6 text-center">
+                      <div className="flex items-center justify-center space-x-1 md:space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         
                         <select
                           key={`${user.id}-${user.role}`} 
                           defaultValue={user.role}
                           onChange={(e) => handleRoleChange(e, user)}
-                          className="text-[10px] font-bold bg-white border border-gray-200 text-gray-700 rounded-lg px-2 py-2 uppercase cursor-pointer hover:border-gray-300 outline-none shadow-sm disabled:opacity-50 transition-colors"
+                          className="text-[9px] md:text-[10px] font-bold bg-white border border-gray-200 text-gray-700 rounded-lg px-1 py-2 md:px-2 uppercase cursor-pointer hover:border-gray-300 outline-none shadow-sm disabled:opacity-50 transition-colors max-w-[80px] md:max-w-none"
                         >
                           <option value="employee">Employee</option>
                           <option value="shift_leader">Shift Leader</option>
@@ -208,11 +209,11 @@ export default function InteractiveLeaderboard({
 
                         {userRole === "store_manager" && (
                           <div className="flex space-x-1">
-                            <button onClick={() => handleOpenModal(user, false)} title="Deduct Points" className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold w-8 h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">-</button>
-                            <button onClick={() => handleOpenModal(user, true)} title="Add Points" className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-8 h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">+</button>
+                            <button onClick={() => handleOpenModal(user, false)} title="Deduct Points" className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">-</button>
+                            <button onClick={() => handleOpenModal(user, true)} title="Add Points" className="bg-[#DA291C] hover:bg-red-700 text-white font-bold w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">+</button>
                           </div>
                         )}
-                        <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-white border border-gray-200 hover:bg-gray-100 text-gray-400 hover:text-red-600 font-bold w-8 h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">✕</button>
+                        <button onClick={() => handleDelete(user)} title="Delete Employee" className="bg-white border border-gray-200 hover:bg-gray-100 text-gray-400 hover:text-red-600 font-bold w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-colors shadow-sm">✕</button>
                       </div>
                     </td>
                   )}
@@ -223,13 +224,13 @@ export default function InteractiveLeaderboard({
         </table>
       </div>
 
-      {/* LEADERSHIP SECTION */}
+      {/* LEADERSHIP SECTION - Mobile Padding */}
       {managers && managers.length > 0 && (
-        <div className="bg-gray-50 border-t border-gray-100 p-8">
+        <div className="bg-gray-50 border-t border-gray-100 p-5 md:p-8">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
             Leadership Team
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {managers.map((manager) => (
               <div key={manager.id} className="bg-white border border-gray-200 rounded-xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow group">
                 <div>
@@ -240,7 +241,7 @@ export default function InteractiveLeaderboard({
                   <button 
                     onClick={() => handleDelete(manager)} 
                     title="Remove Manager" 
-                    className="opacity-0 group-hover:opacity-100 bg-gray-50 hover:bg-red-50 hover:text-red-600 text-gray-400 font-bold w-8 h-8 rounded-lg transition-all flex items-center justify-center text-xs border border-transparent hover:border-red-100"
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-gray-50 hover:bg-red-50 hover:text-red-600 text-gray-400 font-bold w-8 h-8 rounded-lg transition-all flex items-center justify-center text-xs border border-transparent hover:border-red-100"
                   >
                     ✕
                   </button>
@@ -251,30 +252,30 @@ export default function InteractiveLeaderboard({
         </div>
       )}
 
-      {/* CLEAN MODAL */}
+      {/* MOBILE STACKED MODAL */}
       <AnimatePresence>
         {selectedUser && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 rounded-2xl"
+            className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           >
             <motion.div 
               initial={{ scale: 0.95, y: 10 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 10 }}
-              className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm border border-gray-100"
+              className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-sm border border-gray-100"
             >
-              <h3 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">
+              <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-1 tracking-tight">
                 {isAdding ? "Award Points" : "Deduct Points"}
               </h3>
-              <p className="text-sm text-gray-500 mb-6 font-medium">
+              <p className="text-xs md:text-sm text-gray-500 mb-6 font-medium">
                 Updating ledger for <span className="font-bold text-gray-900">{selectedUser.name}</span>
               </p>
               <form onSubmit={handleSubmit}>
-                <div className="flex space-x-4 mb-6">
-                  <div className="w-1/3">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="w-full sm:w-1/3">
                     <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Amount</label>
                     <select 
                       value={pointAmount} 
@@ -284,7 +285,7 @@ export default function InteractiveLeaderboard({
                       <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
                     </select>
                   </div>
-                  <div className="w-2/3">
+                  <div className="w-full sm:w-2/3">
                     <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Reason</label>
                     <input 
                       type="text" 
@@ -296,12 +297,12 @@ export default function InteractiveLeaderboard({
                     />
                   </div>
                 </div>
-                <div className="flex space-x-3">
-                  <button type="button" onClick={() => setSelectedUser(null)} className="flex-1 bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-600 font-bold py-3 rounded-xl transition-colors">
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setSelectedUser(null)} className="flex-1 bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-600 font-bold py-3 rounded-xl transition-colors text-sm md:text-base">
                     Cancel
                   </button>
-                  <button type="submit" disabled={isSubmitting} className={`flex-1 text-white font-bold py-3 rounded-xl transition-colors shadow-md ${isAdding ? 'bg-[#DA291C] hover:bg-red-700' : 'bg-gray-900 hover:bg-black'}`}>
-                    {isSubmitting ? "Processing..." : "Confirm"}
+                  <button type="submit" disabled={isSubmitting} className={`flex-1 text-white font-bold py-3 rounded-xl transition-colors shadow-md text-sm md:text-base ${isAdding ? 'bg-[#DA291C] hover:bg-red-700' : 'bg-gray-900 hover:bg-black'}`}>
+                    {isSubmitting ? "Wait..." : "Confirm"}
                   </button>
                 </div>
               </form>

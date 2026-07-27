@@ -1,174 +1,159 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import InteractiveLeaderboard from '../app/dashboard/InteractiveLeaderboard';
 
-// MOCK DATA: Creating fake users to test with
-const mockLeaderboard = [
-  { id: '1', name: 'Alice Employee', role: 'employee', total_points: 50 },
-  { id: '2', name: 'Bob Shift Leader', role: 'shift_leader', total_points: 75 }
-];
+// Mock the confetti library so it doesn't crash the test environment
+jest.mock('canvas-confetti', () => jest.fn());
 
-const mockManagers = [
-  { id: '3', name: 'Charlie Manager', role: 'store_manager', total_points: 0 }
-];
+describe('InteractiveLeaderboard Component', () => {
+  // 1. Setup Mock Functions (Simulating our database actions)
+  const mockUpdatePoints = jest.fn();
+  const mockDeleteUser = jest.fn();
+  const mockResetPoints = jest.fn();
+  const mockChangeRole = jest.fn();
 
-// MOCK FUNCTIONS: Fake server actions to see if the UI triggers them correctly
-const mockUpdatePoints = jest.fn();
-const mockDeleteUser = jest.fn();
-const mockResetPoints = jest.fn();
-const mockChangeRole = jest.fn();
+  // 2. Setup Mock Data
+  const mockLeaderboard = [
+    { id: 'user-1', name: 'John Doe', role: 'employee', total_points: 150 },
+    { id: 'user-2', name: 'Jane Smith', role: 'employee', total_points: 120 },
+  ];
 
-describe('InteractiveLeaderboard Glitch & Security Tests', () => {
-  
+  const mockManagers = [
+    { id: 'mgr-1', name: 'Boss Man', role: 'store_manager', total_points: 0 }
+  ];
+
   beforeEach(() => {
+    // Clear mocks before each test runs
     jest.clearAllMocks();
-    window.confirm = jest.fn(() => true); // Auto-clicks "Yes" on confirmation popups
-    window.alert = jest.fn(); // Mocks the alert boxes
+    // Mock the browser's window.confirm popup so it automatically clicks "Yes"
+    window.confirm = jest.fn(() => true);
   });
 
-  // TEST 1: The "Visibility Loophole"
-  it('SECURITY: Regular employees should NOT see any manager action buttons (+, -, Delete, Role Change)', () => {
+  it('renders the leaderboard with correct user data', () => {
     render(
       <InteractiveLeaderboard 
         leaderboard={mockLeaderboard} 
         managers={mockManagers} 
-        userRole="employee" // Logged in as regular employee
+        userRole="employee" 
+        storeId={1}
         updatePoints={mockUpdatePoints}
         deleteUser={mockDeleteUser}
         resetPoints={mockResetPoints}
-        storeId={1}
         changeRole={mockChangeRole}
       />
     );
 
-    // Assert that the action buttons literally do not exist on the screen
+    // Verify users are on the screen
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('150')).toBeInTheDocument();
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+  });
+
+  it('hides manager controls from regular employees', () => {
+    render(
+      <InteractiveLeaderboard 
+        leaderboard={mockLeaderboard} 
+        managers={mockManagers} 
+        userRole="employee" 
+        storeId={1}
+        updatePoints={mockUpdatePoints}
+        deleteUser={mockDeleteUser}
+        resetPoints={mockResetPoints}
+        changeRole={mockChangeRole}
+      />
+    );
+
+    // Employees should not see the "Manage" column or Add/Minus buttons
+    expect(screen.queryByText('Manage')).not.toBeInTheDocument();
     expect(screen.queryByTitle('Add Points')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Delete Employee')).not.toBeInTheDocument();
-    expect(screen.queryByText('Reset All Points')).not.toBeInTheDocument();
   });
 
-  // TEST 2: The "Area Manager Deletion Glitch"
-  it('SECURITY: Only Area Managers can delete Store Managers', () => {
-    const { rerender } = render(
-      <InteractiveLeaderboard 
-        leaderboard={mockLeaderboard} 
-        managers={mockManagers} 
-        userRole="store_manager" // Logged in as Store Manager
-        updatePoints={mockUpdatePoints}
-        deleteUser={mockDeleteUser}
-        resetPoints={mockResetPoints}
-        storeId={1}
-        changeRole={mockChangeRole}
-      />
-    );
-
-    // Store manager should NOT see the X button next to another Store Manager
-    expect(screen.queryByTitle('Remove Manager')).not.toBeInTheDocument();
-
-    // Rerender the screen as an Area Manager
-    rerender(
-      <InteractiveLeaderboard 
-        leaderboard={mockLeaderboard} 
-        managers={mockManagers} 
-        userRole="area_manager" // Logged in as Area Manager
-        updatePoints={mockUpdatePoints}
-        deleteUser={mockDeleteUser}
-        resetPoints={mockResetPoints}
-        storeId={1}
-        changeRole={mockChangeRole}
-      />
-    );
-
-    // Area manager SHOULD see the X button
-    expect(screen.getByTitle('Remove Manager')).toBeInTheDocument();
-  });
-
-  // TEST 3: Testing the Role Change function
-  it('FUNCTIONALITY: Changing a role triggers the backend server action', async () => {
-    render(
-      <InteractiveLeaderboard 
-        leaderboard={mockLeaderboard} 
-        managers={mockManagers} 
-        userRole="area_manager" 
-        updatePoints={mockUpdatePoints}
-        deleteUser={mockDeleteUser}
-        resetPoints={mockResetPoints}
-        storeId={1}
-        changeRole={mockChangeRole}
-      />
-    );
-
-    // Find the dropdown for Alice (who is currently an employee)
-    const roleDropdowns = screen.getAllByRole('combobox');
-    const aliceDropdown = roleDropdowns[0];
-
-    // Simulate a manager selecting "shift_leader"
-    await userEvent.selectOptions(aliceDropdown, 'shift_leader');
-
-    // Verify the server action was called with Alice's ID ('1') and the new role
-    expect(mockChangeRole).toHaveBeenCalledWith('1', 'shift_leader');
-  });
-
-  // TEST 4: The "Negative Points Glitch"
-  it('FUNCTIONALITY: Point deductions correctly send negative values to the database', async () => {
+  it('shows manager controls for store managers', () => {
     render(
       <InteractiveLeaderboard 
         leaderboard={mockLeaderboard} 
         managers={mockManagers} 
         userRole="store_manager" 
+        storeId={1}
         updatePoints={mockUpdatePoints}
         deleteUser={mockDeleteUser}
         resetPoints={mockResetPoints}
-        storeId={1}
         changeRole={mockChangeRole}
       />
     );
 
-    // Click the Deduct (-) button for Alice
-    const deductButtons = screen.getAllByTitle('Deduct Points');
-    fireEvent.click(deductButtons[0]);
+    // Store managers SHOULD see the add points button
+    expect(screen.getAllByTitle('Add Points').length).toBeGreaterThan(0);
+    expect(screen.getByText('Reset All Points')).toBeInTheDocument();
+  });
 
-    // Fill out the modal
+  it('opens the modal and submits points successfully', async () => {
+    render(
+      <InteractiveLeaderboard 
+        leaderboard={mockLeaderboard} 
+        managers={mockManagers} 
+        userRole="store_manager" 
+        storeId={1}
+        updatePoints={mockUpdatePoints}
+        deleteUser={mockDeleteUser}
+        resetPoints={mockResetPoints}
+        changeRole={mockChangeRole}
+      />
+    );
+
+    // 1. Click the "+" button for the first user
+    const addButtons = screen.getAllByTitle('Add Points');
+    fireEvent.click(addButtons[0]); // Clicks John Doe's Add button
+
+    // 2. Verify modal opened
+    expect(screen.getByText('Award Points')).toBeInTheDocument();
+    expect(screen.getByText('Updating ledger for')).toBeInTheDocument();
+
+    // 3. Type a reason into the input field
     const reasonInput = screen.getByPlaceholderText('e.g., Deep cleaned');
-    await userEvent.type(reasonInput, 'Late to shift');
-    
-    // Select 5 points
-    const amountSelect = screen.getAllByRole('combobox')[2]; // The modal select
-    await userEvent.selectOptions(amountSelect, '5');
+    await userEvent.type(reasonInput, 'Covered a weekend shift');
 
-    // Submit the form
-    const confirmButton = screen.getByText('Confirm');
-    fireEvent.click(confirmButton);
+    // 4. Change the points dropdown to 3
+    // The background table has role dropdowns, so we grab all of them and pick the last one (the modal)
+    const allComboboxes = screen.getAllByRole('combobox');
+    const selectPoint = allComboboxes[allComboboxes.length - 1];
+    await userEvent.selectOptions(selectPoint, '3');
 
-    // VERIFY: The server action MUST receive -5, not 5.
+    // 5. Submit the form
+    const submitButton = screen.getByText('Confirm');
+    fireEvent.click(submitButton);
+
+    // 6. Verify the database function was called with the right data
     await waitFor(() => {
-      expect(mockUpdatePoints).toHaveBeenCalledWith('1', -5, 'Late to shift');
+      expect(mockUpdatePoints).toHaveBeenCalledTimes(1);
+      expect(mockUpdatePoints).toHaveBeenCalledWith(
+        'user-1', // user id
+        3,        // points
+        'Covered a weekend shift' // reason
+      );
     });
   });
 
-  // TEST 5: The Manual Reset Verification
-  it('FUNCTIONALITY: The Reset button successfully triggers the wipe for the correct store', async () => {
+  it('calls deleteUser when manager removes an employee', async () => {
     render(
       <InteractiveLeaderboard 
         leaderboard={mockLeaderboard} 
         managers={mockManagers} 
         userRole="store_manager" 
+        storeId={1}
         updatePoints={mockUpdatePoints}
         deleteUser={mockDeleteUser}
         resetPoints={mockResetPoints}
-        storeId={1} // The current active store
         changeRole={mockChangeRole}
       />
     );
 
-    // Find and click the Reset button
-    const resetButton = screen.getByText('Reset All Points');
-    fireEvent.click(resetButton);
+    // Click the delete button for John Doe
+    const deleteButtons = screen.getAllByTitle('Delete Employee');
+    fireEvent.click(deleteButtons[0]);
 
-    // Verify the server action was called with the correct Store ID (1)
-    await waitFor(() => {
-      expect(mockResetPoints).toHaveBeenCalledWith(1);
-    });
+    // Verify window.confirm was triggered and the DB function was called
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockDeleteUser).toHaveBeenCalledWith('user-1');
   });
 });

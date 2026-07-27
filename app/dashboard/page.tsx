@@ -197,39 +197,40 @@ export default async function DashboardPage(props: DashboardProps) {
   const employeeRank = employeeRankIndex !== -1 ? employeeRankIndex + 1 : null;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 pb-12">
       
-      <nav className="bg-[#DA291C] text-white shadow-md">
+      {/* MOBILE OPTIMIZED NAVBAR */}
+      <nav className="bg-[#DA291C] text-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
-            <div className="flex items-center space-x-6">
-              <Link href={`/activity?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Activity Feed</Link>
-              <Link href="/dashboard/settings" className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Settings</Link>
-              <span className="text-sm font-medium hidden sm:block border-l pl-6 border-red-400 capitalize">
+            <div className="font-black text-lg md:text-xl tracking-tight">FIVE GUYS</div>
+            <div className="flex items-center space-x-3 sm:space-x-6">
+              <Link href={`/activity?store=${safeStoreId}`} className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider hidden sm:block">Activity</Link>
+              <Link href="/dashboard/settings" className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Settings</Link>
+              <span className="text-sm font-medium hidden md:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" ? "Admin Manager" : `${session.user?.name} (${userRole?.replace('_', ' ')})`}
               </span>
               <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-                <button type="submit" className="bg-white text-[#DA291C] px-4 py-2 rounded-md text-sm font-bold shadow-sm hover:bg-gray-100 transition-colors">LOG OUT</button>
+                <button type="submit" className="bg-white text-[#DA291C] px-3 py-1.5 md:px-4 md:py-2 rounded-md text-[10px] sm:text-sm font-bold shadow-sm hover:bg-gray-100 transition-colors">LOG OUT</button>
               </form>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-8">
         
         {isAreaManager && (
-          <div className="mb-8">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Select Location</h3>
-            <div className="flex space-x-3 overflow-x-auto pb-2">
+          <div className="mb-6 md:mb-8">
+            <h3 className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Select Location</h3>
+            <div className="flex space-x-2 md:space-x-3 overflow-x-auto pb-2 scrollbar-hide">
               {allStores.map(store => {
                 const isActive = store.id === safeStoreId;
                 return (
                   <Link 
                     key={store.id} 
                     href={`/dashboard?store=${store.id}`}
-                    className={`px-5 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm border 
+                    className={`px-4 py-2 md:px-5 md:py-2.5 rounded-full font-bold text-xs md:text-sm whitespace-nowrap transition-all shadow-sm border 
                       ${isActive ? 'bg-gray-900 text-white shadow-md transform scale-105 border-transparent' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'}`}
                   >
                     {store.name}
@@ -241,31 +242,32 @@ export default async function DashboardPage(props: DashboardProps) {
         )}
 
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">{activeStoreName}</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">{activeStoreName}</h1>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           
+          {/* MOBILE OPTIMIZED WELCOME CARD */}
           {!isManager && employeeData && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl shadow-lg p-6 text-white flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900">
-                <div className="mb-4 md:mb-0 text-center md:text-left">
+              <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-xl shadow-lg p-5 md:p-6 text-white flex flex-col md:flex-row justify-between items-center border-b-4 border-gray-900">
+                <div className="mb-6 md:mb-0 text-center md:text-left w-full">
                   <h2 className="text-2xl font-black tracking-tight mb-1">Welcome back, {employeeData.name.split(' ')[0]}!</h2>
-                  <p className="text-red-100 font-medium">Keep up the great work on your shifts.</p>
+                  <p className="text-red-100 font-medium text-sm md:text-base">Keep up the great work on your shifts.</p>
                 </div>
-                <div className="flex space-x-8 text-center md:text-right">
-                  <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Your Rank</p>
-                    <p className="text-4xl font-black">#{employeeRank}</p>
+                <div className="flex w-full md:w-auto justify-center space-x-4 md:space-x-8 text-center md:text-right">
+                  <div className="bg-white/10 rounded-lg px-4 py-3 md:py-2 backdrop-blur-sm flex-1 md:flex-none">
+                    <p className="text-[10px] md:text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Your Rank</p>
+                    <p className="text-3xl md:text-4xl font-black">#{employeeRank}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg px-4 py-2 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Total Points</p>
-                    <p className="text-4xl font-black">{employeeData.total_points}</p>
+                  <div className="bg-white/10 rounded-lg px-4 py-3 md:py-2 backdrop-blur-sm flex-1 md:flex-none">
+                    <p className="text-[10px] md:text-xs font-bold text-red-200 uppercase tracking-wider mb-1">Total Points</p>
+                    <p className="text-3xl md:text-4xl font-black">{employeeData.total_points}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+              <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
                 <h3 className="text-lg font-black text-gray-900 mb-4">Your Recent Point History</h3>
                 {employeeHistory.length === 0 ? (
                   <p className="text-gray-500 text-sm font-medium">No points awarded yet. Time to get on the board!</p>
@@ -275,9 +277,9 @@ export default async function DashboardPage(props: DashboardProps) {
                       <div key={log.id} className="py-3 flex justify-between items-center group hover:bg-gray-50 px-2 rounded transition-colors">
                         <div>
                           <p className="text-sm font-bold text-gray-900">{log.reason}</p>
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Awarded by {log.manager_name}</p>
+                          <p className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Awarded by {log.manager_name}</p>
                         </div>
-                        <div className={`font-black text-xl ${log.points_changed > 0 ? 'text-[#DA291C]' : 'text-gray-800'}`}>
+                        <div className={`font-black text-lg md:text-xl ${log.points_changed > 0 ? 'text-[#DA291C]' : 'text-gray-800'}`}>
                           {log.points_changed > 0 ? '+' : ''}{log.points_changed}
                         </div>
                       </div>
@@ -288,10 +290,11 @@ export default async function DashboardPage(props: DashboardProps) {
             </div>
           )}
 
+          {/* MOBILE OPTIMIZED ADD USER FORM */}
           {isManager && (
-            <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+            <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
               <h3 className="text-lg font-black text-gray-900 mb-4">Add Team Member to {activeStoreName}</h3>
-              <form action={addEmployee} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <form action={addEmployee} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start md:items-end">
                 <input type="hidden" name="store_id" value={safeStoreId} />
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Name</label>
@@ -314,7 +317,7 @@ export default async function DashboardPage(props: DashboardProps) {
                     {isAreaManager && <option value="store_manager">Store Manager</option>}
                   </select>
                 </div>
-                <button type="submit" className="bg-gray-900 text-white font-bold py-3 px-4 rounded-xl transition-colors hover:bg-black h-[52px]">
+                <button type="submit" className="w-full md:w-auto bg-gray-900 text-white font-bold py-3 px-4 rounded-xl transition-colors hover:bg-black h-[52px]">
                   + ADD USER
                 </button>
               </form>
