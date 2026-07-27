@@ -241,8 +241,15 @@ export default async function DashboardPage(props: DashboardProps) {
           </div>
         )}
 
-        <div className="mb-6 flex items-center justify-between">
+        {/* HEADER & NEW ACTIVITY BUTTON */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">{activeStoreName}</h1>
+          <Link 
+            href={`/activity?store=${safeStoreId}`}
+            className="w-full sm:w-auto bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center space-x-2"
+          >
+            <span>📊 View Activity Feed</span>
+          </Link>
         </div>
 
         <div className="space-y-6 md:space-y-8">
