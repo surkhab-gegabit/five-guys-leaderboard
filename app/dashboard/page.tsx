@@ -183,7 +183,6 @@ export default async function DashboardPage(props: DashboardProps) {
 
   let employeeHistory: PointLog[] = [];
   if (!isManager) {
-    // We increased this from 10 to 50 so your new "Load More" button has data to load!
     employeeHistory = (await sql`
       SELECT p.id, p.points_changed, p.reason, u.name as manager_name 
       FROM points_log p 
@@ -207,7 +206,8 @@ export default async function DashboardPage(props: DashboardProps) {
           <div className="flex justify-between h-16 items-center">
             <div className="font-black text-lg md:text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-3 sm:space-x-6">
-              <Link href={`/activity?store=${safeStoreId}`} className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider hidden sm:block">Activity</Link>
+              {/* Activity link is now visible everywhere, not hidden on mobile */}
+              <Link href={`/activity?store=${safeStoreId}`} className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Activity</Link>
               <Link href="/dashboard/settings" className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Settings</Link>
               <span className="text-sm font-medium hidden md:block border-l pl-6 border-red-400 capitalize">
                 {session.user?.name === "Admin Manager" ? "Admin Manager" : `${session.user?.name} (${userRole?.replace('_', ' ')})`}
@@ -243,15 +243,9 @@ export default async function DashboardPage(props: DashboardProps) {
           </div>
         )}
 
-        {/* HEADER & NEW ACTIVITY BUTTON */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* HEADER ONLY (Redundant Button Removed) */}
+        <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">{activeStoreName}</h1>
-          <Link 
-            href={`/activity?store=${safeStoreId}`}
-            className="w-full sm:w-auto bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center space-x-2"
-          >
-            <span>📊 View Activity Feed</span>
-          </Link>
         </div>
 
         <div className="space-y-6 md:space-y-8">
@@ -279,7 +273,6 @@ export default async function DashboardPage(props: DashboardProps) {
               <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
                 <h3 className="text-lg font-black text-gray-900 mb-4">Your Recent Point History</h3>
                 
-                {/* NEW COMPONENT REPLACES THE HARDCODED LIST */}
                 <RecentHistory history={employeeHistory} />
                 
               </div>
