@@ -21,27 +21,24 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // 1. We added .trim() here to ensure no accidental spaces break the login
       const cleanEmail = email.trim();
       const cleanPassword = password.trim();
 
       const res = await signIn("credentials", {
         email: cleanEmail,
         password: cleanPassword,
-        // 2. Pass an empty string instead of undefined so NextAuth doesn't panic
         token: step === 2 ? token.trim() : "", 
         redirect: false,
       });
 
-      // 3. Let's log the response to the console just in case we need to debug!
-      console.log("NextAuth Response:", res);
-
       if (res?.error) {
-        const errorString = String(res.error); // Ensure it's a string
+        // NextAuth v5 moves custom errors into the 'code' property
+        const errorCode = (res as any).code || "";
+        const errorString = String(res.error); 
         
-        if (errorString.includes("2FA_REQUIRED")) {
+        if (errorCode === "2FA_REQUIRED" || errorString.includes("2FA_REQUIRED")) {
           setStep(2);
-        } else if (errorString.includes("INVALID_2FA")) {
+        } else if (errorCode === "INVALID_2FA" || errorString.includes("INVALID_2FA")) {
           setError("Incorrect or expired code. Please try again.");
         } else {
           setError("Invalid email or password.");
@@ -94,7 +91,6 @@ export default function LoginPage() {
             )}
 
             <div className="relative overflow-hidden">
-              {/* mode="wait" ensures the first form leaves before the second enters */}
               <AnimatePresence mode="wait">
                 
                 {/* STEP 1: CREDENTIALS */}
@@ -170,7 +166,7 @@ export default function LoginPage() {
                         required 
                         maxLength={6}
                         value={token}
-                        onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))} // Only allows numbers
+                        onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
                         className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:border-[#DA291C] focus:ring-4 focus:ring-red-50 text-gray-900 bg-white font-black text-center text-3xl tracking-[0.5em] outline-none transition-all placeholder:tracking-normal"
                         placeholder="000000"
                         autoFocus
