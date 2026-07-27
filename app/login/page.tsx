@@ -21,18 +21,27 @@ export default function LoginPage() {
     setError("");
 
     try {
+      // 1. We added .trim() here to ensure no accidental spaces break the login
+      const cleanEmail = email.trim();
+      const cleanPassword = password.trim();
+
       const res = await signIn("credentials", {
-        email,
-        password,
-        token: step === 2 ? token : undefined,
+        email: cleanEmail,
+        password: cleanPassword,
+        // 2. Pass an empty string instead of undefined so NextAuth doesn't panic
+        token: step === 2 ? token.trim() : "", 
         redirect: false,
       });
 
+      // 3. Let's log the response to the console just in case we need to debug!
+      console.log("NextAuth Response:", res);
+
       if (res?.error) {
-        // NextAuth v5 returns our custom error codes inside the error string
-        if (res.error.includes("2FA_REQUIRED")) {
+        const errorString = String(res.error); // Ensure it's a string
+        
+        if (errorString.includes("2FA_REQUIRED")) {
           setStep(2);
-        } else if (res.error.includes("INVALID_2FA")) {
+        } else if (errorString.includes("INVALID_2FA")) {
           setError("Incorrect or expired code. Please try again.");
         } else {
           setError("Invalid email or password.");
@@ -41,6 +50,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (err) {
+      console.error("Login catch error:", err);
       setError("An unexpected error occurred.");
     } finally {
       setIsLoading(false);
@@ -84,7 +94,7 @@ export default function LoginPage() {
             )}
 
             <div className="relative overflow-hidden">
-              {/* mode="wait" ensures the first form leaves before the second enters, removing the need for absolute positioning */}
+              {/* mode="wait" ensures the first form leaves before the second enters */}
               <AnimatePresence mode="wait">
                 
                 {/* STEP 1: CREDENTIALS */}
