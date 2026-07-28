@@ -54,8 +54,8 @@ export default async function DashboardPage(props: DashboardProps) {
       return;
     }
 
-    const name = formData.get("name")?.toString() || "";
-    const email = formData.get("email")?.toString() || "";
+    const name = formData.get("name")?.toString().trim() || "";
+    const email = formData.get("email")?.toString().trim().toLowerCase() || "";
     const password = formData.get("password")?.toString() || "";
     const role = formData.get("role")?.toString() || "employee";
     const targetStoreId = parseInt(formData.get("store_id")?.toString() || "1"); 
@@ -63,10 +63,29 @@ export default async function DashboardPage(props: DashboardProps) {
     if (currentRole === "store_manager" && (role === "store_manager" || role === "area_manager")) {
       return; 
     }
+
+    // 1. CHECK FOR DUPLICATES BEFORE INSERTING
+    const existingUsers = await sql`
+      SELECT name, email FROM users 
+      WHERE LOWER(name) = LOWER(${name}) OR LOWER(email) = LOWER(${email}) 
+      LIMIT 1
+    `;
+
+    if (existingUsers.length > 0) {
+      const conflict = existingUsers[0];
+      if (conflict.name.toLowerCase() === name.toLowerCase()) {
+        redirect(`/dashboard?store=${targetStoreId}&error=name_taken`);
+      }
+      if (conflict.email.toLowerCase() === email.toLowerCase()) {
+        redirect(`/dashboard?store=${targetStoreId}&error=email_taken`);
+      }
+    }
     
     const hash = await bcrypt.hash(password, 10);
     await sql`INSERT INTO users (name, email, password_hash, role, store_id) VALUES (${name}, ${email}, ${hash}, ${role}, ${targetStoreId})`;
+    
     revalidatePath("/dashboard"); 
+    redirect(`/dashboard?store=${targetStoreId}&success=user_added`);
   }
 
   async function updatePoints(employeeId: string, pointsChange: number, reason: string) {
@@ -206,7 +225,6 @@ export default async function DashboardPage(props: DashboardProps) {
           <div className="flex justify-between h-16 items-center">
             <div className="font-black text-lg md:text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-3 sm:space-x-6">
-              {/* Activity link is now visible everywhere, not hidden on mobile */}
               <Link href={`/activity?store=${safeStoreId}`} className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Activity</Link>
               <Link href="/dashboard/settings" className="text-[10px] sm:text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">Settings</Link>
               <span className="text-sm font-medium hidden md:block border-l pl-6 border-red-400 capitalize">
@@ -243,7 +261,6 @@ export default async function DashboardPage(props: DashboardProps) {
           </div>
         )}
 
-        {/* HEADER ONLY (Redundant Button Removed) */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">{activeStoreName}</h1>
         </div>
@@ -272,9 +289,7 @@ export default async function DashboardPage(props: DashboardProps) {
 
               <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
                 <h3 className="text-lg font-black text-gray-900 mb-4">Your Recent Point History</h3>
-                
                 <RecentHistory history={employeeHistory} />
-                
               </div>
             </div>
           )}
@@ -283,6 +298,24 @@ export default async function DashboardPage(props: DashboardProps) {
           {isManager && (
             <div className="bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5 md:p-6">
               <h3 className="text-lg font-black text-gray-900 mb-4">Add Team Member to {activeStoreName}</h3>
+              
+              {/* VALIDATION MESSAGES */}
+              {searchParams?.error === "name_taken" && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-bold">
+                  ⚠️ That name is already in use. Please choose a different name.
+                </div>
+              )}
+              {searchParams?.error === "email_taken" && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-bold">
+                  ⚠️ That email is already registered. Each user must have a unique email.
+                </div>
+              )}
+              {searchParams?.success === "user_added" && (
+                <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-bold">
+                  ✅ Team member added successfully!
+                </div>
+              )}
+
               <form action={addEmployee} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start md:items-end">
                 <input type="hidden" name="store_id" value={safeStoreId} />
                 <div>
