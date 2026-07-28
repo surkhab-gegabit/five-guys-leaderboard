@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { sql } from "../../lib/db";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
+import ResetButton from "./ResetButton"; // <-- Safely imported Client button
 
 // Strict TypeScript Interfaces for the database
 type AuditLog = {
@@ -11,7 +12,7 @@ type AuditLog = {
   manager_name: string;
   points_changed: number;
   reason: string;
-  created_at: Date | null; // Allow null in case older records are blank
+  created_at: Date | null;
 };
 
 type Store = { id: number; name: string };
@@ -30,7 +31,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
   const userRole = session.user.role as string;
   const isAreaManager = userRole === "area_manager";
   
-  // SECURE ADMIN CHECK: Only true if you are the Admin Manager
+  // SECURE ADMIN CHECK
   const isAdmin = session.user.name === "Admin Manager"; 
 
   const allStores = (await sql`SELECT * FROM stores ORDER BY id`) as Store[];
@@ -43,7 +44,6 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
     activeStoreId = parsedStoreId || allStores[0]?.id;
   }
 
-  // BULLETPROOF: Ensure activeStoreId is NEVER undefined, which crashes SQL
   if (!activeStoreId && allStores.length > 0) {
     activeStoreId = allStores[0].id;
   }
@@ -51,7 +51,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
 
   const activeStoreName = allStores.find(s => s.id === safeStoreId)?.name || "Unknown Store";
 
-  // BULLETPROOF FORM ACTION: Uses formData to prevent closure crashes on live servers
+  // THE SECURE SERVER ACTION
   async function clearStoreActivity(formData: FormData) {
     "use server";
     const currentSession = await auth();
@@ -145,16 +145,9 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
             </h2>
             
             <div className="flex items-center gap-3">
-              {/* ADMIN ONLY RESET BUTTON */}
+              {/* ADMIN ONLY RESET BUTTON (Safely injected as a client component) */}
               {isAdmin && (
-                <form action={clearStoreActivity} onSubmit={(e) => {
-                  if(!confirm("Are you sure you want to delete ALL activity logs for this store? This cannot be undone.")) e.preventDefault();
-                }}>
-                  <input type="hidden" name="storeId" value={safeStoreId} />
-                  <button type="submit" className="bg-red-50 text-[#DA291C] text-xs font-black px-4 py-2 rounded-lg border-2 border-red-100 hover:bg-red-100 transition-colors uppercase tracking-widest shadow-sm">
-                    ⚠️ Reset Feed
-                  </button>
-                </form>
+                <ResetButton storeId={safeStoreId} clearStoreActivity={clearStoreActivity} />
               )}
               
               <span className="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
@@ -171,7 +164,6 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
                 {logs.map((log) => {
                   const isPositive = log.points_changed > 0;
                   
-                  // BULLETPROOF: If log.created_at is null (old record), fallback to today's date so it doesn't crash
                   const safeDate = log.created_at ? new Date(log.created_at) : new Date();
                   
                   const formattedDate = new Intl.DateTimeFormat('en-US', {
