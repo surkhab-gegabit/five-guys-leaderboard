@@ -1,7 +1,7 @@
 import { auth, signOut } from "../../auth";
 import { redirect } from "next/navigation";
 import { sql } from "../../lib/db";
-import { revalidatePath } from "next/cache"; // <-- Needed for the reset action
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 
 // Strict TypeScript Interfaces for the database
@@ -11,7 +11,7 @@ type AuditLog = {
   manager_name: string;
   points_changed: number;
   reason: string;
-  created_at: Date;
+  created_at: Date | null; // Allow null in case older records are blank
 };
 
 type Store = { id: number; name: string };
@@ -43,25 +43,29 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
     activeStoreId = parsedStoreId || allStores[0]?.id;
   }
 
+  // BULLETPROOF: Ensure activeStoreId is NEVER undefined, which crashes SQL
   if (!activeStoreId && allStores.length > 0) {
     activeStoreId = allStores[0].id;
   }
+  const safeStoreId = activeStoreId || 1;
 
-  const activeStoreName = allStores.find(s => s.id === activeStoreId)?.name || "Unknown Store";
+  const activeStoreName = allStores.find(s => s.id === safeStoreId)?.name || "Unknown Store";
 
-  // THE RESET ACTION
-  async function clearStoreActivity() {
+  // BULLETPROOF FORM ACTION: Uses formData to prevent closure crashes on live servers
+  async function clearStoreActivity(formData: FormData) {
     "use server";
     const currentSession = await auth();
-    // Double-check security on the server so no one can hack the button
     if (currentSession?.user?.name !== "Admin Manager") return; 
 
-    // Deletes only the point logs that belong to employees of the current active store
-    await sql`
-      DELETE FROM points_log 
-      WHERE employee_id IN (SELECT id FROM users WHERE store_id = ${activeStoreId})
-    `;
-    revalidatePath("/activity");
+    const targetStoreId = formData.get("storeId");
+
+    if (targetStoreId) {
+      await sql`
+        DELETE FROM points_log 
+        WHERE employee_id IN (SELECT id FROM users WHERE store_id = ${targetStoreId})
+      `;
+      revalidatePath("/activity");
+    }
   }
 
   const logs = (await sql`
@@ -75,7 +79,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
     FROM points_log
     JOIN users AS employee ON points_log.employee_id = employee.id
     JOIN users AS manager ON points_log.manager_id = manager.id
-    WHERE employee.store_id = ${activeStoreId}
+    WHERE employee.store_id = ${safeStoreId}
     ORDER BY points_log.created_at DESC
     LIMIT 50
   `) as AuditLog[];
@@ -89,7 +93,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
           <div className="flex justify-between h-16 items-center">
             <div className="font-black text-xl tracking-tight">FIVE GUYS</div>
             <div className="flex items-center space-x-6">
-              <Link href={`/dashboard?store=${activeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
+              <Link href={`/dashboard?store=${safeStoreId}`} className="text-sm font-bold hover:text-red-200 transition-colors uppercase tracking-wider">
                 ← Dashboard
               </Link>
               
@@ -118,7 +122,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Select Location</h3>
             <div className="flex space-x-3 overflow-x-auto pb-2">
               {allStores.map(store => {
-                const isActive = store.id === activeStoreId;
+                const isActive = store.id === safeStoreId;
                 return (
                   <Link 
                     key={store.id} 
@@ -146,6 +150,7 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
                 <form action={clearStoreActivity} onSubmit={(e) => {
                   if(!confirm("Are you sure you want to delete ALL activity logs for this store? This cannot be undone.")) e.preventDefault();
                 }}>
+                  <input type="hidden" name="storeId" value={safeStoreId} />
                   <button type="submit" className="bg-red-50 text-[#DA291C] text-xs font-black px-4 py-2 rounded-lg border-2 border-red-100 hover:bg-red-100 transition-colors uppercase tracking-widest shadow-sm">
                     ⚠️ Reset Feed
                   </button>
@@ -166,17 +171,20 @@ export default async function ActivityFeedPage(props: ActivityFeedProps) {
                 {logs.map((log) => {
                   const isPositive = log.points_changed > 0;
                   
+                  // BULLETPROOF: If log.created_at is null (old record), fallback to today's date so it doesn't crash
+                  const safeDate = log.created_at ? new Date(log.created_at) : new Date();
+                  
                   const formattedDate = new Intl.DateTimeFormat('en-US', {
                     month: 'short',
                     day: 'numeric',
                     timeZone: 'America/Edmonton'
-                  }).format(new Date(log.created_at));
+                  }).format(safeDate);
                   
                   const formattedTime = new Intl.DateTimeFormat('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
                     timeZone: 'America/Edmonton'
-                  }).format(new Date(log.created_at));
+                  }).format(safeDate);
 
                   return (
                     <div key={log.id} className="flex items-start space-x-4 p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors">
